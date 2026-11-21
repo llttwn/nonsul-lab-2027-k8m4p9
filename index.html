@@ -1,0 +1,2084 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>논술 풀이 연구실 — 조건을 읽고, 풀이를 설계하고, 답안으로</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="window.__onKatexLoad && window.__onKatexLoad()"></script>
+  <style>
+    :root {
+      --navy: #0f1e36;
+      --navy-soft: #1a2d4d;
+      --surface: #f8fafc;
+      --panel-right: #f3f6fa;
+      --border: #e2e8f0;
+      --blue: #2563eb;
+      --blue-soft: #eff6ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Inter", system-ui, -apple-system, sans-serif;
+      background-color: var(--surface);
+      color: #0f172a;
+      margin: 0;
+    }
+    .katex { font-size: 1.02em; }
+    .katex-display { overflow-x: auto; overflow-y: hidden; padding: 0.4rem 0; margin: 0.5rem 0; }
+    .annot-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #2563eb;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 9999px;
+      padding: 0.1rem 0.5rem;
+      margin-left: 0.35rem;
+      cursor: pointer;
+      vertical-align: middle;
+      transition: all 0.15s ease;
+    }
+    .annot-trigger:hover, .annot-trigger.active {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+    }
+    .linked-block {
+      transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+    .linked-block.highlighted {
+      background-color: #eff6ff !important;
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.18);
+    }
+    .spoiler-box {
+      border: 2px dashed #cbd5e1;
+      background: #f8fafc;
+    }
+    .tab-btn {
+      position: relative;
+      white-space: nowrap;
+    }
+    .tab-btn.active {
+      color: #1d4ed8;
+      font-weight: 700;
+    }
+    .tab-btn.active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 2.5px;
+      background: #2563eb;
+      border-radius: 2px 2px 0 0;
+    }
+    @media print {
+      header, aside, #rightPanel, #mobileDrawer, #toastContainer, .no-print { display: none !important; }
+      main { width: 100% !important; max-width: 100% !important; padding: 0 !important; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <!-- 상단 글로벌 헤더 -->
+  <header class="bg-[#0f1e36] text-white sticky top-0 z-30 shadow-sm">
+    <div class="max-w-[1600px] mx-auto px-4 h-14 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <button id="mobileMenuBtn" type="button" class="lg:hidden p-1.5 rounded-lg hover:bg-white/10 text-slate-200" aria-label="기출 서가 열기">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-bold tracking-tight text-base sm:text-lg truncate">논술 풀이 연구실</span>
+            <span class="hidden sm:inline-block text-[11px] bg-white/10 text-blue-200 px-2 py-0.5 rounded-full">2027 대비</span>
+          </div>
+          <p class="hidden md:block text-[11px] text-slate-300 leading-none mt-0.5">조건을 읽고, 풀이를 설계하고, 답안으로</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <div class="inline-flex bg-[#1a2d4d] p-0.5 rounded-lg border border-white/10" role="group" aria-label="학습 모드 전환">
+          <button id="modeStudyBtn" type="button" class="px-3 py-1.5 rounded-md text-xs font-semibold transition">해설 공부</button>
+          <button id="modeSoloBtn" type="button" class="px-3 py-1.5 rounded-md text-xs font-semibold transition">혼자 풀기</button>
+        </div>
+        <button id="mobileAnnotBtn" type="button" class="xl:hidden px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-medium text-blue-100">
+          해설 창
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 3단 레이아웃 -->
+  <div class="max-w-[1600px] w-full mx-auto flex-1 flex min-h-0">
+    <!-- 좌측 사이드바: 나의 기출 서가 -->
+    <aside id="leftSidebar" class="hidden lg:flex lg:flex-col w-72 shrink-0 bg-white border-r border-slate-200 h-[calc(100vh-3.5rem)] sticky top-14">
+      <div class="p-3.5 border-b border-slate-200 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold text-slate-800">나의 기출 서가</h2>
+          <span id="problemCountLabel" class="text-[11px] text-slate-500"></span>
+        </div>
+        <div id="schoolTabs" class="flex flex-wrap gap-1"></div>
+        <div class="relative">
+          <input id="searchInput" type="search" placeholder="문항, 단원, 개념 검색" class="w-full text-xs pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
+          <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z"/></svg>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5">
+          <select id="yearFilter" class="text-xs px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:border-blue-500">
+            <option value="all">모든 학년도</option>
+          </select>
+          <select id="sessionFilter" class="text-xs px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:border-blue-500">
+            <option value="all">모든 교시</option>
+          </select>
+        </div>
+        <select id="accessFilter" class="w-full text-xs px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:border-blue-500">
+          <option value="all">모든 접근성 수준</option>
+          <option value="ready">현재 범위로 접근 가능</option>
+          <option value="supplement">새 개념 조금 보충</option>
+          <option value="advanced">여러 선수 개념 필요</option>
+        </select>
+      </div>
+
+      <!-- 문항 목록 -->
+      <div id="problemList" class="flex-1 overflow-y-auto p-2.5 space-y-1.5"></div>
+
+      <!-- 하단 다가오는 시험 & 기록 관리 -->
+      <div class="p-3 border-t border-slate-200 bg-slate-50/80 space-y-2.5">
+        <div class="rounded-lg bg-white border border-slate-200 p-2.5">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-bold text-slate-700">다가오는 논술 일정</span>
+            <span class="text-[10px] text-slate-400">자연계 수리논술</span>
+          </div>
+          <div id="examScheduleList" class="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] text-slate-600"></div>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button id="exportBtn" type="button" class="flex-1 text-[11px] font-medium py-1.5 px-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 transition">기록 내보내기</button>
+          <label class="flex-1 text-center text-[11px] font-medium py-1.5 px-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 transition cursor-pointer">
+            기록 가져오기
+            <input id="importInput" type="file" accept=".json" class="hidden" />
+          </label>
+        </div>
+        <p class="text-[10px] text-slate-400 text-center">학습 기록은 이 브라우저에 자동 저장됩니다.</p>
+      </div>
+    </aside>
+
+    <!-- 중앙 메인 학습 영역 -->
+    <main class="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-5 overflow-y-auto">
+      <div id="mainContent" class="max-w-4xl mx-auto space-y-5"></div>
+    </main>
+
+    <!-- 우측 보조 패널: 한 줄씩 이해하기 -->
+    <aside id="rightPanel" class="hidden xl:flex xl:flex-col w-80 2xl:w-96 shrink-0 bg-[#f3f6fa] border-l border-slate-200 h-[calc(100vh-3.5rem)] sticky top-14">
+      <div class="p-4 border-b border-slate-200 bg-white/70 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-slate-800">한 줄씩 이해하기</h2>
+          <p class="text-[11px] text-slate-500">단서 → 의미 → 선택 이유 → 할 일</p>
+        </div>
+        <span id="annotPinnedBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">고정됨</span>
+      </div>
+      <div id="annotPanelBody" class="flex-1 overflow-y-auto p-4"></div>
+    </aside>
+  </div>
+
+  <!-- 모바일 좌측 서가 드로어 -->
+  <div id="mobileDrawer" class="fixed inset-0 z-40 hidden lg:hidden">
+    <div id="mobileDrawerBackdrop" class="absolute inset-0 bg-slate-900/50"></div>
+    <div class="relative w-80 max-w-[85vw] h-full bg-white shadow-xl flex flex-col">
+      <div class="p-3.5 border-b border-slate-200 flex items-center justify-between bg-[#0f1e36] text-white">
+        <span class="font-bold text-sm">나의 기출 서가</span>
+        <button id="closeMobileDrawer" type="button" class="p-1 rounded hover:bg-white/10">✕</button>
+      </div>
+      <div id="mobileSidebarSlot" class="flex-1 overflow-y-auto p-3 space-y-2"></div>
+    </div>
+  </div>
+
+  <!-- 모바일/태블릿 우측 주석 시트 -->
+  <div id="mobileAnnotModal" class="fixed inset-0 z-40 hidden xl:hidden">
+    <div id="mobileAnnotBackdrop" class="absolute inset-0 bg-slate-900/40"></div>
+    <div class="absolute bottom-0 inset-x-0 max-h-[75vh] bg-[#f3f6fa] rounded-t-2xl shadow-2xl flex flex-col border-t border-slate-200">
+      <div class="p-3.5 border-b border-slate-200 bg-white rounded-t-2xl flex items-center justify-between">
+        <span class="font-bold text-sm text-slate-800">한 줄씩 이해하기</span>
+        <button id="closeMobileAnnot" type="button" class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">닫기</button>
+      </div>
+      <div id="mobileAnnotBody" class="flex-1 overflow-y-auto p-4"></div>
+    </div>
+  </div>
+
+  <!-- 토스트 알림 -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    // =========================================================================
+    // [DATA START: 문항 및 일정 데이터]
+    // 제미나이 / ChatGPT 어느 쪽에서든 아래 EXAMS, PROBLEMS 배열만 수정하거나
+    // 새 대학(세종대, 아주대, 인하대 등) 객체를 추가하면 사이트 전체에 자동 반영됩니다.
+    // =========================================================================
+    const EXAMS = [
+      { school: "동국대", date: "2026-11-22", label: "11.22" },
+      { school: "광운대", date: "2026-11-28", label: "11.28" },
+      { school: "세종대", date: "2026-11-29", label: "11.29" },
+      { school: "아주대", date: "2026-12-05", label: "12.05" },
+      { school: "인하대", date: "2026-12-06", label: "12.06" }
+    ];
+
+    const PROBLEMS = [
+      // ---------------------- 동국대 2026학년도 ----------------------
+      {
+        id: "dg-2026-1",
+        school: "동국대",
+        year: 2026,
+        session: "자연계열",
+        number: "문제 1",
+        title: "정팔면체와 정사면체의 이면각, 두 면의 일치",
+        officialUrl: "https://ipsi.dongguk.edu/upload/file/20260223163919G9MS7D.PDF#page=43",
+        officialPage: "동국대 2026 논술가이드북 p.43",
+        subjects: ["기하", "수학 I"],
+        accessLevel: "supplement",
+        accessLabel: "기하 기본 개념 보충",
+        summary: "정팔면체와 정사면체의 공통 모서리 중점에 수선을 내려 단면 삼각형을 만들고, 코사인법칙과 보각 관계로 이면각 및 두 면의 일치를 증명하는 문항입니다.",
+        passages: [
+          {
+            label: "【가】",
+            text: "직선 $l$을 공유하는 두 반평면 $\\alpha, \\beta$로 이루어진 도형을 이면각이라 한다. 이때 직선 $l$을 이면각의 변, 두 반평면 $\\alpha, \\beta$를 각각 이면각의 면이라고 한다. 이면각의 변 $l$ 위의 한 점 $O$를 지나고 직선 $l$에 수직인 두 반직선 $OA, OB$를 두 반평면 $\\alpha, \\beta$ 위에 각각 그을 때, $\\angle AOB$의 크기는 점 $O$의 위치에 관계없이 일정하고 이 각의 크기를 이면각의 크기라고 한다.",
+            annot: {
+              source: "문제 원문 · 제시문 【가】",
+              quote: "이면각의 변 l 위의 한 점 O를 지나고 직선 l에 수직인 두 반직선 OA, OB",
+              clue: "교선(이면각의 변) $l$에 수직인 두 선분 $OA, OB$",
+              meaning: "3차원 공간에서 두 면이 이루는 각을 2차원 평면 삼각형의 각 $\\angle AOB$로 바꿀 수 있다는 정의입니다.",
+              reason: "공간도형을 처음 다뤄도 교선 위의 중점을 잡아 수선 두 개만 찾으면 중학 기하·코사인법칙 문제로 바뀝니다.",
+              action: "각 소문항마다 먼저 '두 면의 교선'을 찾고, 각 면(정삼각형)에서 교선에 수직인 중선을 그립니다.",
+              caution: "아무 두 선분 사이의 각이 아니라 반드시 교선에 '둘 다 수직'인 선분이어야 이면각입니다."
+            }
+          },
+          {
+            label: "【나】",
+            text: "공간에서 직선 $l$과 평면 $\\alpha$ 위의 모든 직선이 수직일 때, 직선 $l$과 평면 $\\alpha$는 서로 수직이라고 하고, 기호로 $l \\perp \\alpha$와 같이 나타낸다. 이때 직선 $l$을 평면 $\\alpha$의 수선이라 하고, 직선 $l$과 평면 $\\alpha$가 만나는 점 $O$를 수선의 발이라고 한다."
+          },
+          {
+            label: "【다】",
+            text: "평면 $\\alpha$와 한 점 $O$에서 만나는 직선 $l$이 있다. 이때 직선 $l$이 평면 $\\alpha$ 위의 점 $O$를 지나는 서로 다른 두 직선 $m, n$과 서로 수직이면 직선 $l$이 평면 $\\alpha$에 수직이다."
+          }
+        ],
+        prompt: "모든 변의 길이가 $1$인 정팔면체 $A\\text{-}BCDE\\text{-}F$와 정사면체 $J\\text{-}GHI$에 대해서 다음 물음에 답하시오.",
+        subquestions: [
+          {
+            num: "(1)",
+            text: "정팔면체에서 평면 $ABC$와 평면 $FBC$가 이루는 이면각 중 둔각의 크기를 $\\alpha$라고 할 때 $\\cos\\alpha$의 값을 구하시오.",
+            annot: {
+              source: "문제 원문 · 소문항 (1)",
+              quote: "평면 ABC와 평면 FBC가 이루는 이면각 중 둔각의 크기를 α",
+              clue: "공통 변 $BC$와 '둔각' 조건",
+              meaning: "두 정삼각형 $ABC, FBC$가 모서리 $BC$를 공유하며, 구할 코사인 값은 음수($\\cos\\alpha < 0$)여야 합니다.",
+              reason: "정삼각형에서 밑변 중점 $M$을 잡으면 $AM \\perp BC$, $FM \\perp BC$가 자동으로 성립하기 때문입니다.",
+              action: "삼각형 $AMF$의 세 변 $AM, FM, AF$ 길이를 구해 코사인법칙을 적용합니다.",
+              caution: "정팔면체 대각선 $AF$ 길이를 $1$로 착각하지 말고 정사각형 $BCDE$의 대각선 $\\sqrt{2}$와 대칭임을 확인하세요."
+            }
+          },
+          {
+            num: "(2)",
+            text: "정팔면체에서 평면 $ABC$와 평면 $AED$가 이루는 이면각 중 예각의 크기를 $\\beta$라고 할 때 $\\cos\\beta$의 값을 구하시오.",
+            annot: {
+              source: "문제 원문 · 소문항 (2)",
+              quote: "평면 ABC와 평면 AED가 이루는 이면각 중 예각의 크기를 β",
+              clue: "공통 모서리가 안 보이고 꼭짓점 $A$만 공유, 대신 $BC \\parallel ED$",
+              meaning: "두 평면의 교선 $l$은 점 $A$를 지나면서 $BC$와 $ED$에 평행한 직선입니다.",
+              reason: "교선을 직접 눈으로 찾기 어려울 때는 두 면에 각각 들어있는 평행한 두 직선을 먼저 찾습니다.",
+              action: "$BC$의 중점 $M$, $ED$의 중점 $Q$를 잡아 $\\triangle MAQ$에서 $\\angle MAQ = \\beta$의 코사인을 구합니다.",
+              caution: "예각 $\\beta$를 구하므로 $\\cos\\beta > 0$인지 마지막에 부호를 반드시 점검하세요."
+            }
+          },
+          {
+            num: "(3)",
+            text: "정사면체에서 평면 $JGH$와 평면 $IGH$가 이루는 이면각 중 예각의 크기를 $\\gamma$라고 할 때 $\\cos\\gamma$의 값을 구하시오.",
+            annot: {
+              source: "문제 원문 · 소문항 (3)",
+              quote: "정사면체에서 평면 JGH와 평면 IGH가 이루는 이면각 중 예각의 크기를 γ",
+              clue: "공통 모서리 $GH$와 정삼각형 두 면",
+              meaning: "(1)과 완전히 같은 방식으로 $GH$의 중점 $O$를 잡으면 $\\angle JOI = \\gamma$가 됩니다.",
+              reason: "변 길이가 모두 $1$이므로 $JO = IO = \\frac{\\sqrt{3}}{2}$, $JI = 1$로 바로 계산할 수 있습니다.",
+              action: "삼각형 $JOI$에 코사인법칙을 적용해 $\\cos\\gamma = \\frac{1}{3}$을 얻습니다.",
+              caution: "정사면체 이면각 코사인 $\\frac{1}{3}$은 정팔면체 예각과 값이 같습니다."
+            }
+          },
+          {
+            num: "(4)",
+            text: "점 $G$와 점 $B$, 점 $H$와 점 $C$, 점 $I$와 점 $F$를 일치시켰을 때, 평면 $ABC$와 평면 $JGH$가 일치함을 이면각을 이용하여 보이시오.",
+            annot: {
+              source: "문제 원문 · 소문항 (4)",
+              quote: "평면 ABC와 평면 JGH가 일치함을 이면각을 이용하여 보이시오.",
+              clue: "(1)의 $\\cos\\alpha = -\\frac{1}{3}$과 (3)의 $\\cos\\gamma = \\frac{1}{3}$",
+              meaning: "공통 평면 $FBC(=IGH)$ 양쪽에 붙은 두 반평면이 이루는 각의 합 $\\alpha + \\gamma$가 $\\pi$임을 보이라는 뜻입니다.",
+              reason: "코사인 값이 부호만 반대이고 각의 범위가 주어져 있으면 보각 관계($\\alpha + \\gamma = \\pi$)를 정확히 확정할 수 있습니다.",
+              action: "$\\cos(\\pi - \\alpha) = -\\cos\\alpha = \\frac{1}{3} = \\cos\\gamma$와 각의 범위를 서술해 $\\alpha + \\gamma = \\pi$를 보입니다.",
+              caution: "$\\cos A = \\cos B$만으로 바로 $A = B$라 쓰면 감점됩니다. 반드시 $0 < \\pi - \\alpha < \\frac{\\pi}{2}$, $0 < \\gamma < \\frac{\\pi}{2}$ 범위를 적으세요."
+            }
+          }
+        ],
+        concepts: [
+          {
+            subject: "기하",
+            title: "이면각의 단면 잡기",
+            desc: "두 평면의 교선 위의 한 점에서 각 평면에 수직인 선분을 하나씩 그으면, 두 선분이 이루는 각이 이면각의 크기입니다. 각 면이 정삼각형이면 공통 모서리의 중점을 잡는 것이 가장 빠릅니다.",
+            example: "한 변이 $1$인 정삼각형 $ABC$에서 $BC$의 중점을 $M$이라 하면 $AM \\perp BC$이고 $AM = \\frac{\\sqrt{3}}{2}$.",
+            quizQ: "두 평면이 공통 모서리 없이 한 점 $A$만 만나고, 각 평면에 평행한 변 $BC \\parallel ED$가 있다면 교선은 어디에 있을까요?",
+            quizA: "점 $A$를 지나고 $BC, ED$와 평행한 직선이 두 평면의 교선입니다."
+          },
+          {
+            subject: "수학 I",
+            title: "코사인법칙으로 각의 코사인 구하기",
+            desc: "삼각형의 세 변의 길이를 모두 알 때, 끼인각 $\\theta$의 코사인 값을 좌표나 각도기 없이 바로 계산할 수 있습니다.",
+            example: "세 변이 $u=\\frac{\\sqrt{3}}{2}, v=\\frac{\\sqrt{3}}{2}, w=1$이면 $\\cos\\theta = \\frac{\\frac{3}{4}+\\frac{3}{4}-1}{2\\cdot\\frac{3}{4}} = \\frac{1}{3}$.",
+            quizQ: "$w = \\sqrt{2}$로 바뀌면 $\\cos\\theta$의 부호는 어떻게 변할까요?",
+            quizA: "분자가 $\\frac{3}{2} - 2 = -\\frac{1}{2} < 0$이 되어 둔각($\\cos\\theta = -\\frac{1}{3}$)이 됩니다."
+          },
+          {
+            subject: "기하",
+            title: "두 각의 합과 평면의 일치",
+            desc: "같은 교선 $BC$에 수직인 단면에서, 공통 반평면 $FBC$의 양쪽으로 펼쳐진 두 반평면 $ABC, JGH$가 이루는 각의 합 $\\alpha + \\gamma = \\pi$이면 두 반평면은 한 평면을 이룹니다.",
+            example: "$\\frac{\\pi}{2} < \\alpha < \\pi$, $0 < \\gamma < \\frac{\\pi}{2}$이고 $\\cos\\alpha = -\\cos\\gamma$이면 $\\pi - \\alpha = \\gamma$, 즉 $\\alpha + \\gamma = \\pi$.",
+            quizQ: "왜 $\\cos(\\pi-\\alpha)=\\cos\\gamma$ 뒤에 각의 범위를 꼭 써야 할까요?",
+            quizA: "코사인 함수는 $[0, \\pi]$에서만 일대일대응이므로, 두 각이 같은 단조 구간에 속함을 밝혀야 같다고 결론낼 수 있습니다."
+          }
+        ],
+        formulas: [
+          { type: "기본 암기 공식", name: "정삼각형의 높이", expr: "$h = \\frac{\\sqrt{3}}{2}s$", note: "한 변의 길이가 $s$인 정삼각형에서 중선이자 수선의 길이" },
+          { type: "기본 암기 공식", name: "코사인법칙", expr: "$\\cos\\theta = \\frac{u^2 + v^2 - w^2}{2uv}$", note: "$u, v$가 각 $\\theta$를 끼는 두 변, $w$는 맞은편 변" },
+          { type: "기본 암기 공식", name: "보각의 코사인", expr: "$\\cos(\\pi - \\theta) = -\\cos\\theta$", note: "둔각과 예각의 합이 $\\pi$임을 보일 때 핵심" },
+          { type: "이 문제 전용 관계식", name: "정팔면체 꼭짓점 거리", expr: "$AF = \\sqrt{2}$", note: "정사각형 $BCDE$의 대각선 길이와 대칭으로 같음" }
+        ],
+        designSteps: [
+          { title: "단면부터 찾기", detail: "(1)은 $BC$의 중점 $M$, (3)은 $GH$의 중점 $O$를 잡습니다. 각 면이 정삼각형이므로 중선을 내리면 교선에 수직인 두 선분이 바로 생깁니다." },
+          { title: "(1)의 세 변 계산", detail: "$AM = FM = \\frac{\\sqrt{3}}{2}$를 구하고, 정사각형 $BCDE$의 중심 $N$을 이용해 $AN = \\frac{1}{\\sqrt{2}}$, $AF = \\sqrt{2}$를 얻은 뒤 코사인법칙으로 $\\cos\\alpha = -\\frac{1}{3}$을 구합니다." },
+          { title: "(2)의 숨은 교선 찾기", detail: "$BC \\parallel ED$이므로 $A$를 지나 두 변에 평행한 직선이 교선입니다. 중점 $M, Q$에 내린 $AM, AQ$가 교선에 수직이며 $\\triangle MAQ$의 세 변은 $\\frac{\\sqrt{3}}{2}, \\frac{\\sqrt{3}}{2}, 1$입니다." },
+          { title: "(3)에 같은 도구 적용", detail: "정사면체에서 $JO = IO = \\frac{\\sqrt{3}}{2}$, $JI = 1$을 코사인법칙에 넣어 $\\cos\\gamma = \\frac{1}{3}$을 구합니다." },
+          { title: "(4)는 각의 합으로 마무리", detail: "$G=B, H=C, I=F$로 맞추면 수직 단면에서 두 면 사이의 각이 $\\alpha + \\gamma$가 됩니다. $\\cos(\\pi-\\alpha)=\\cos\\gamma$와 각의 범위로 $\\alpha+\\gamma=\\pi$를 보여 일치를 증명합니다." }
+        ],
+        hints: [
+          "각 면이 정삼각형이라는 점을 이용해 공통 모서리의 중점에 높이를 내려 보세요.",
+          "(1)은 $AM = FM = \\frac{\\sqrt{3}}{2}$, $AF = \\sqrt{2}$이고, (2)는 교선이 $A$를 지나 $BC \\parallel ED$에 평행합니다.",
+          "(3)의 단면 삼각형은 변이 $\\frac{\\sqrt{3}}{2}, \\frac{\\sqrt{3}}{2}, 1$입니다. (4)는 $\\cos(\\pi - \\alpha) = \\cos\\gamma$와 각의 범위를 함께 이용하세요."
+        ],
+        scratchpad: [
+          {
+            linkId: "dg26-1-s1",
+            kind: "주어진 조건",
+            text: "모든 모서리 길이가 $1$인 정팔면체에서 평면 $ABC$와 평면 $FBC$는 모서리 $BC$를 공유한다.",
+            why: "교선 $BC$의 중점 $M$을 잡으면 정삼각형 성질로 $AM \\perp BC$, $FM \\perp BC$가 즉시 성립한다.",
+            confirmed: "$\\alpha = \\angle AMF$ (둔각), $AM = FM = \\frac{\\sqrt{3}}{2}$",
+            remaining: "대변 $AF$의 길이를 구해 코사인법칙에 대입하기"
+          },
+          {
+            linkId: "dg26-1-s1",
+            kind: "도출한 결론",
+            text: "정사각형 $BCDE$의 중심 $N$에 대해 $BN = \\frac{\\sqrt{2}}{2}$이므로 $AN = \\sqrt{1 - \\frac{1}{2}} = \\frac{\\sqrt{2}}{2}$, 대칭성으로 $AF = 2AN = \\sqrt{2}$. 따라서 $\\cos\\alpha = \\frac{\\frac{3}{4}+\\frac{3}{4}-2}{2\\cdot\\frac{3}{4}} = -\\frac{1}{3}$.",
+            why: "삼각형 $AMF$의 세 변이 모두 확정되었으므로 코사인법칙 한 번으로 (1)이 끝난다.",
+            confirmed: "$\\cos\\alpha = -\\frac{1}{3}$",
+            remaining: "(2)에서 평면 $ABC$와 평면 $AED$의 교선 찾기"
+          },
+          {
+            linkId: "dg26-1-s2",
+            kind: "중단한 접근",
+            text: "평면 $ABC$와 $AED$의 교점이 $A$ 하나뿐이라 직접 공간좌표를 잡으려 했으나 계산이 길어진다.",
+            why: "좌표 없이도 $BC \\parallel ED$를 이용하면 교선 $l$의 방향이 바로 결정된다.",
+            confirmed: "교선 $l$은 $A$를 지나고 $BC, ED$에 평행",
+            remaining: "$BC, ED$의 중점 $M, Q$로 단면 $\\triangle MAQ$ 만들기"
+          },
+          {
+            linkId: "dg26-1-s2",
+            kind: "도출한 결론",
+            text: "$AM \\perp BC \\parallel l$, $AQ \\perp ED \\parallel l$이므로 $\\beta = \\angle MAQ$. $MQ = 1$, $AM = AQ = \\frac{\\sqrt{3}}{2}$에서 $\\cos\\beta = \\frac{\\frac{3}{4}+\\frac{3}{4}-1}{2\\cdot\\frac{3}{4}} = \\frac{1}{3}$.",
+            why: "단면 삼각형의 세 변이 바로 나오며 값이 양수이므로 예각 조건도 만족한다.",
+            confirmed: "$\\cos\\beta = \\frac{1}{3}$",
+            remaining: "(3) 정사면체 이면각 $\\gamma$와 (4) 두 면 일치 증명"
+          },
+          {
+            linkId: "dg26-1-s3",
+            kind: "도출한 결론",
+            text: "정사면체에서 $GH$의 중점 $O$를 잡으면 $JO = IO = \\frac{\\sqrt{3}}{2}$, $JI = 1$이므로 $\\cos\\gamma = \\frac{1}{3}$.",
+            why: "(2)의 삼각형 $\\triangle MAQ$와 세 변 길이가 완전히 같은 합동 삼각형이다.",
+            confirmed: "$\\cos\\gamma = \\frac{1}{3}$",
+            remaining: "(4)에서 $\\alpha + \\gamma = \\pi$임을 엄밀히 서술하기"
+          },
+          {
+            linkId: "dg26-1-s4",
+            kind: "도출한 결론",
+            text: "$G=B, H=C, I=F$로 맞추면 공통면 $FBC(=IGH)$에 대해 단면에서 $\\angle AMF = \\alpha$, $\\angle FMI' = \\gamma$. $\\cos(\\pi-\\alpha) = -\\cos\\alpha = \\frac{1}{3} = \\cos\\gamma$이고 $0 < \\pi-\\alpha, \\gamma < \\frac{\\pi}{2}$이므로 $\\alpha + \\gamma = \\pi$.",
+            why: "두 반평면이 이루는 각이 평각 $\\pi$이면 두 반평면은 하나의 평면을 이룬다.",
+            confirmed: "평면 $ABC$와 평면 $JGH$는 일치",
+            remaining: "없음 (전체 문항 해결 완료)"
+          }
+        ],
+        solution: [
+          {
+            linkId: "dg26-1-s1",
+            step: "(1)",
+            text: "변 $BC$의 중점을 $M$이라 하면 정삼각형의 성질에 의해 $AM \\perp BC$, $FM \\perp BC$이므로 이면각은 $\\alpha = \\angle AMF$이다. $AM = FM = \\frac{\\sqrt{3}}{2}$이고, 정사각형 $BCDE$의 대각선과 대칭이므로 $AF = \\sqrt{2}$이다. 코사인법칙에 의해 $\\cos\\alpha = \\frac{\\frac{3}{4} + \\frac{3}{4} - 2}{2 \\cdot \\frac{\\sqrt{3}}{2} \\cdot \\frac{\\sqrt{3}}{2}} = -\\frac{1}{3}$이다.",
+            annot: {
+              source: "제출용 답안 · (1)",
+              quote: "AM ⊥ BC, FM ⊥ BC이므로 이면각은 α = ∠AMF이다.",
+              clue: "제시문 【가】의 이면각 정의 적용",
+              meaning: "왜 $\\angle AMF$가 이면각인지 한 줄로 명시해야 감점이 없습니다.",
+              reason: "수직 조건($\\perp$)을 빠뜨리면 정의 근거가 누락됩니다.",
+              action: "중점 $M$ 정의 → 두 수직 관계 명시 → 세 변 길이 → 코사인법칙 순으로 간결히 씁니다.",
+              caution: "둔각이므로 $\\cos\\alpha = -\\frac{1}{3} < 0$인지 확인하세요."
+            }
+          },
+          {
+            linkId: "dg26-1-s2",
+            step: "(2)",
+            text: "$BC \\parallel ED$이므로 두 평면 $ABC, AED$의 교선 $l$은 점 $A$를 지나며 $BC, ED$에 평행하다. $BC, ED$의 중점을 각각 $M, Q$라 하면 $AM \\perp l$, $AQ \\perp l$이므로 $\\beta = \\angle MAQ$이다. $AM = AQ = \\frac{\\sqrt{3}}{2}$, $MQ = 1$이므로 $\\cos\\beta = \\frac{\\frac{3}{4} + \\frac{3}{4} - 1}{2 \\cdot \\frac{3}{4}} = \\frac{1}{3}$이다."
+          },
+          {
+            linkId: "dg26-1-s3",
+            step: "(3)",
+            text: "정사면체에서 $GH$의 중점을 $O$라 하면 $JO \\perp GH$, $IO \\perp GH$이므로 $\\gamma = \\angle JOI$이다. $JO = IO = \\frac{\\sqrt{3}}{2}$, $JI = 1$이므로 코사인법칙에 의해 $\\cos\\gamma = \\frac{1}{3}$이다."
+          },
+          {
+            linkId: "dg26-1-s4",
+            step: "(4)",
+            text: "$G=B, H=C, I=F$로 일치시키면 변 $BC(=GH)$의 중점 $M(=O)$에서 $MA, MF, MJ$는 모두 $BC$에 수직이므로 한 평면 위에 있다. 이때 $\\frac{\\pi}{2} < \\alpha < \\pi$, $0 < \\gamma < \\frac{\\pi}{2}$이므로 $0 < \\pi - \\alpha < \\frac{\\pi}{2}$이고 $\\cos(\\pi - \\alpha) = -\\cos\\alpha = \\frac{1}{3} = \\cos\\gamma$이다. 구간 $(0, \\frac{\\pi}{2})$에서 코사인 함수는 일대일대응이므로 $\\pi - \\alpha = \\gamma$, 즉 $\\alpha + \\gamma = \\pi$이다. 따라서 반직선 $MA$와 $MJ$는 일직선을 이루고, 평면 $ABC$와 평면 $JGH$는 일치한다."
+          }
+        ],
+        checklist: [
+          "(1)~(3) 모두 '교선에 수직인 두 선분'을 명시하고 이면각의 정의를 연결했는가?",
+          "(2)에서 숨은 교선 $l$이 $A$를 지나고 $BC \\parallel ED$에 평행함을 밝혔는가?",
+          "(4)에서 $\\cos(\\pi-\\alpha) = \\cos\\gamma$뿐 아니라 두 각의 범위($0 < \\pi-\\alpha, \\gamma < \\frac{\\pi}{2}$)를 함께 서술했는가?",
+          "정팔면체 $AF = \\sqrt{2}$ 길이를 근거와 함께 적었는가?"
+        ]
+      },
+      {
+        id: "dg-2026-2",
+        school: "동국대",
+        year: 2026,
+        session: "자연계열",
+        number: "문제 2",
+        title: "등차수열의 부분합 최솟값, 절댓값과 수열의 극한",
+        officialUrl: "https://ipsi.dongguk.edu/upload/file/20260223163919G9MS7D.PDF#page=44",
+        officialPage: "동국대 2026 논술가이드북 p.44",
+        subjects: ["수학 I", "미적분"],
+        accessLevel: "supplement",
+        accessLabel: "수열의 극한 기초 보충",
+        summary: "두 등차수열의 차·합 조건과 부분합 최솟값 조건을 항의 부호 부등식으로 번역해 일반항을 구하고, 절댓값 수열의 최솟값과 부분합 극한을 계산하는 문항입니다.",
+        passages: [
+          {
+            label: "【가】",
+            text: "첫째항이 $a$, 공차가 $d$인 등차수열 $\\{a_n\\}$의 첫째항부터 제$n$항까지의 합을 $S_n$이라고 하면 $a_n = a + (n-1)d$, $S_n = \\frac{n\\{2a + (n-1)d\\}}{2}$ ($n=1, 2, 3, \\dots$)."
+          },
+          {
+            label: "【나】",
+            text: "두 수열 $\\{a_n\\}, \\{b_n\\}$에 대하여 $\\sum_{k=1}^n (a_k+b_k) = \\sum_{k=1}^n a_k + \\sum_{k=1}^n b_k$, $\\sum_{k=1}^n (a_k-b_k) = \\sum_{k=1}^n a_k - \\sum_{k=1}^n b_k$, $\\sum_{k=1}^n c a_k = c \\sum_{k=1}^n a_k$, $\\sum_{k=1}^n c = cn$ ($c$는 상수)."
+          },
+          {
+            label: "【다】",
+            text: "$\\lim_{n\\to\\infty} a_n = L$, $\\lim_{n\\to\\infty} b_n = M$ ($L, M$은 실수)일 때 극한의 사칙연산과 상수배 성질이 성립한다."
+          }
+        ],
+        prompt: "공차가 자연수인 두 등차수열 $\\{a_n\\}, \\{b_n\\}$이 다음 조건을 만족한다.<br/>① $\\lim_{n\\to\\infty} \\frac{a_n - b_n}{n} = 2$, $\\sum_{n=1}^{10} (a_n - b_n) = 180$.<br/>② $\\sum_{k=1}^n (a_k + b_k)$는 $n=7$일 때만 최솟값을 갖는다.<br/>③ $\\sum_{n=1}^4 |b_n| = 88$.",
+        subquestions: [
+          {
+            num: "(1)",
+            text: "수열 $\\{a_n\\}$과 $\\{b_n\\}$의 일반항을 각각 구하시오.",
+            annot: {
+              source: "문제 원문 · 조건 ①②③",
+              quote: "n=7일 때만 최솟값을 갖는다 / 공차가 자연수",
+              clue: "'$n=7$일 때만' 최솟값 + '공차가 자연수'",
+              meaning: "등호 없는 엄격한 부등식 $a_7 + b_7 < 0 < a_8 + b_8$이 성립하고, 공차 $q$가 자연수이므로 부등식 범위 안에 자연수가 하나만 남습니다.",
+              reason: "미지수 4개($a_1, b_1, p, q$)를 조건 ①②③으로 연립하면 $q$에 대한 부등식 하나로 압축되기 때문입니다.",
+              action: "①에서 $p-q=2, a_1-b_1=9$를 구하고, ②에서 $b_7 < 0$을 밝혀 ③의 절댓값을 벗긴 뒤 $q$의 범위를 구합니다.",
+              caution: "'때만'이라는 표현 때문에 $a_7 + b_7 \\le 0$이 아니라 엄격히 $< 0$입니다. $0$이 되면 $n=6$이나 $n=8$에서도 같은 최솟값이 생깁니다."
+            }
+          },
+          {
+            num: "(2)",
+            text: "수열 $\\{c_n\\}$이 $c_n = |a_n| - |b_n|$일 때, $c_n$의 최솟값을 구하시오.",
+            annot: {
+              source: "문제 원문 · 소문항 (2)",
+              quote: "c_n = |a_n| - |b_n|의 최솟값",
+              clue: "$a_n = 4n-20$, $b_n = 2n-27$의 부호가 바뀌는 지점",
+              meaning: "$a_n$은 $n=5$에서 $0$, $b_n$은 $n=13$과 $14$ 사이에서 부호가 바뀝니다.",
+              reason: "절댓값이 두 개 있으므로 부호 변화점을 기준으로 구간을 3개로 나누면 각 구간이 단순한 일차식(등차수열)이 됩니다.",
+              action: "$n \\le 5$, $6 \\le n \\le 13$, $n \\ge 14$로 나누어 각 구간의 증감과 경계항($c_5, c_6, c_{14}$)을 비교합니다.",
+              caution: "$n$은 자연수이므로 $b_n = 0$이 되는 $13.5$ 대신 $n=13$과 $n=14$로 정확히 경계를 나누세요."
+            }
+          },
+          {
+            num: "(3)",
+            text: "$S_n = \\sum_{k=1}^n c_k$일 때, $\\lim_{n\\to\\infty} \\frac{S_n}{n^2}$을 구하시오.",
+            annot: {
+              source: "문제 원문 · 소문항 (3)",
+              quote: "lim (S_n / n^2)",
+              clue: "$n \\ge 14$ 이후부터는 $c_k = 2k + 7$로 일정한 식",
+              meaning: "앞의 유한 개(13개) 항의 합은 상수이므로 $n^2$으로 나누고 극한을 보내면 $0$으로 사라집니다.",
+              reason: "유한 개의 초기 항은 $n \\to \\infty$일 때 최고차항 계수에 영향을 주지 않습니다.",
+              action: "$n \\ge 14$에서 $S_n = \\sum_{k=1}^{13} c_k + \\sum_{k=14}^n (2k+7) = n^2 + 8n - 258$을 정리해 극한값 $1$을 구합니다.",
+              caution: "직관으로만 $1$이라 적지 말고 $S_n$을 $n$의 이차식 + 상수로 명시한 뒤 제시문 【다】의 극한 성질을 적용하세요."
+            }
+          }
+        ],
+        concepts: [
+          {
+            subject: "수학 I",
+            title: "부분합의 최솟값과 항의 부호",
+            desc: "공차가 양수인 등차수열의 부분합 $T_n$이 $n=7$에서만 최소라면 $T_7 < T_6$이고 $T_7 < T_8$입니다. 즉 $7$번째 항까지 음수이고 $8$번째 항부터 양수입니다.",
+            example: "$T_7 - T_6 = a_7 + b_7 < 0$, $T_8 - T_7 = a_8 + b_8 > 0$.",
+            quizQ: "만약 $a_7 + b_7 = 0$이라면 어떤 일이 생기나요?",
+            quizA: "$T_6 = T_7$이 되어 최솟값이 $n=6, 7$ 두 곳에서 나타나므로 '$n=7$일 때만' 조건에 어긋납니다."
+          },
+          {
+            subject: "미적분 기초",
+            title: "수열의 극한과 최고차항 비교",
+            desc: "$n \\to \\infty$일 때 $\\frac{An^2 + Bn + C}{n^2} = A + \\frac{B}{n} + \\frac{C}{n^2} \\to A$입니다. 유한 개의 초기 항이 만드는 상수 $C$는 극한에 영향을 주지 않습니다.",
+            example: "$\\lim_{n\\to\\infty} \\frac{n^2 + 8n - 258}{n^2} = 1 + 0 - 0 = 1$.",
+            quizQ: "조건 ①에서 $\\lim_{n\\to\\infty} \\frac{a_n - b_n}{n} = 2$가 공차의 차 $p-q=2$를 주는 이유는?",
+            quizA: "$a_n - b_n = (p-q)n + (a_1-b_1-p+q)$이므로 $n$으로 나누어 극한을 취하면 일차항 계수 $p-q$만 남습니다."
+          }
+        ],
+        formulas: [
+          { type: "문제 제공 공식", name: "등차수열 일반항과 합", expr: "$a_n = a_1+(n-1)d,\\; S_n = \\frac{n\\{2a_1+(n-1)d\\}}{2}$", note: "제시문 【가】" },
+          { type: "기본 암기 공식", name: "자연수의 합", expr: "$\\sum_{k=1}^n k = \\frac{n(n+1)}{2}$", note: "구간합 $\\sum_{k=14}^n (2k+7)$ 계산 시 사용" },
+          { type: "유도해서 얻는 식", name: "부분합 최솟값 조건", expr: "$a_7+b_7 < 0 < a_8+b_8$", note: "$T_7 < T_6$와 $T_7 < T_8$에서 도출" }
+        ],
+        designSteps: [
+          { title: "미지수 4개를 차수열로 줄이기", detail: "$a_n = a_1+(n-1)p$, $b_n = b_1+(n-1)q$ ($p, q \\in \\mathbb{N}$)로 놓습니다. 조건 ①에서 $p-q=2$, $a_1-b_1=9$를 얻어 $a_n - b_n = 2n+7 > 0$을 확정합니다." },
+          { title: "최솟값 조건을 부호로 번역", detail: "$a_7+b_7 < 0 < a_8+b_8$이고 $a_7 > b_7$이므로 $2b_7 < a_7+b_7 < 0 \\implies b_7 < 0$입니다. 공차 $q>0$이므로 $b_1, b_2, b_3, b_4$가 모두 음수임이 확정됩니다." },
+          { title: "절댓값 조건으로 자연수 $q$ 확정", detail: "③에서 $-(4b_1+6q)=88 \\implies b_1 = -\\frac{3}{2}q - 22$. 이를 $a_7+b_7<0<a_8+b_8$에 대입해 $\\frac{21}{11} < q < \\frac{23}{9}$을 얻고 자연수 $q=2$를 확정합니다." },
+          { title: "절댓값 부호 구간 나누기", detail: "$a_n = 4n-20, b_n = 2n-27$이므로 $n \\le 5$, $6 \\le n \\le 13$, $n \\ge 14$로 나누어 각 구간의 단조성과 최솟값 $c_5 = -17$을 구합니다." },
+          { title: "꼬리합 정리 후 극한", detail: "$n \\ge 14$에서 $S_n = \\sum_{k=1}^{13} c_k + \\sum_{k=14}^n (2k+7) = n^2 + 8n - 258$이므로 극한은 $1$입니다." }
+        ],
+        hints: [
+          "$a_n = a_1 + (n-1)p$, $b_n = b_1 + (n-1)q$로 놓으면 조건 ①은 $p-q$와 $a_1-b_1$을 정해 줍니다.",
+          "부분합을 $T_n$이라 하면 $T_7 < T_6$, $T_8 > T_7$입니다. 이 차를 계산해 $b_1, \\dots, b_4$의 부호를 확정하세요.",
+          "$b_1 = -\\frac{3}{2}q - 22$를 얻었다면 $9q-23 < 0 < 11q-21$에 대입해 자연수 $q$를 찾으세요. 마지막 극한에서는 $n \\ge 14$의 꼬리합만 이차항을 만듭니다."
+        ],
+        scratchpad: [
+          {
+            linkId: "dg26-2-s1",
+            kind: "주어진 조건",
+            text: "공차 $p, q$는 자연수. $\\lim \\frac{a_n-b_n}{n} = p-q = 2$, $\\sum_{n=1}^{10}(a_n-b_n) = 10(a_1-b_1) + 45(p-q) = 180$.",
+            why: "차수열 $a_n - b_n$도 등차수열이므로 ①만으로 $p-q$와 $a_1-b_1$이 바로 풀린다.",
+            confirmed: "$p-q = 2$, $a_1-b_1 = 9$, 즉 $a_n - b_n = 2n + 7 > 0$",
+            remaining: "조건 ②로 $b_1, \\dots, b_4$의 부호를 밝혀 ③의 절댓값 풀기"
+          },
+          {
+            linkId: "dg26-2-s1",
+            kind: "도출한 결론",
+            text: "$a_7+b_7 < 0 < a_8+b_8$이고 $a_7 > b_7$이므로 $b_7 < 0$. $q>0$이므로 $b_1 < b_2 < b_3 < b_4 < b_7 < 0$. 따라서 ③은 $-(4b_1+6q)=88 \\implies b_1 = -\\frac{3}{2}q - 22$.",
+            why: "절댓값 안의 부호가 모두 음수임을 논리적으로 확정해야 감점이 없다.",
+            confirmed: "$b_1 = -\\frac{3}{2}q - 22$, $a_1 = -\\frac{3}{2}q - 13$",
+            remaining: "$a_7+b_7<0<a_8+b_8$에 대입해 자연수 $q$ 구하기"
+          },
+          {
+            linkId: "dg26-2-s1",
+            kind: "도출한 결론",
+            text: "$a_7+b_7 = 9q - 23 < 0$, $a_8+b_8 = 11q - 21 > 0 \\implies \\frac{21}{11} < q < \\frac{23}{9}$. 자연수 $q=2$, 따라서 $p=4, b_1=-25, a_1=-16$.",
+            why: "$\\frac{21}{11} \\approx 1.91$, $\\frac{23}{9} \\approx 2.56$ 사이의 자연수는 $2$뿐이다.",
+            confirmed: "$a_n = 4n - 20$, $b_n = 2n - 27$",
+            remaining: "(2) $c_n = |a_n|-|b_n|$ 구간별 최솟값 계산"
+          },
+          {
+            linkId: "dg26-2-s2",
+            kind: "도출한 결론",
+            text: "$n \\le 5$: $c_n = -(4n-20)+(2n-27) = -2n-7$ (감소, 최소 $c_5 = -17$). $6 \\le n \\le 13$: $c_n = (4n-20)+(2n-27) = 6n-47$ (증가, 최소 $c_6 = -11$). $n \\ge 14$: $c_n = 2n+7$ (증가, 최소 $c_{14} = 35$).",
+            why: "구간별 일차식의 부호와 경계값을 비교하면 전체 최솟값이 확정된다.",
+            confirmed: "$c_n$의 최솟값은 $-17$ ($n=5$)",
+            remaining: "(3) $S_n$을 $n \\ge 14$에서 정리하고 극한 구하기"
+          },
+          {
+            linkId: "dg26-2-s3",
+            kind: "도출한 결론",
+            text: "$n \\ge 14$일 때 $S_n = \\sum_{k=1}^{13} c_k + \\sum_{k=14}^n (2k+7) = (-65 + 80) + (n^2 + 8n - 273) = n^2 + 8n - 258$. 따라서 $\\lim_{n\\to\\infty} \\frac{S_n}{n^2} = 1$.",
+            why: "$n \\ge 14$에서 일반식을 구하면 제시문 【다】로 바로 극한을 낼 수 있다.",
+            confirmed: "$\\lim_{n\\to\\infty} \\frac{S_n}{n^2} = 1$",
+            remaining: "없음 (전체 문항 해결 완료)"
+          }
+        ],
+        solution: [
+          {
+            linkId: "dg26-2-s1",
+            step: "(1)",
+            text: "두 수열의 공차를 자연수 $p, q$라 하면 조건 ①에서 $p-q=2$, $10(a_1-b_1)+45(p-q)=180$이므로 $a_1-b_1=9$, 즉 $a_n - b_n = 2n+7 > 0$이다. 조건 ②에 의해 $a_7+b_7 < 0 < a_8+b_8$이고 $a_7 > b_7$이므로 $b_7 < 0$이다. 공차 $q>0$이므로 $b_1, b_2, b_3, b_4 < 0$이며, 조건 ③에서 $-(4b_1+6q)=88$, 즉 $b_1 = -\\frac{3}{2}q - 22$이다. 이를 부등식에 대입하면 $9q-23 < 0 < 11q-21$, 즉 $\\frac{21}{11} < q < \\frac{23}{9}$이므로 자연수 $q=2$이다. 따라서 $a_n = 4n-20$, $b_n = 2n-27$이다."
+          },
+          {
+            linkId: "dg26-2-s2",
+            step: "(2)",
+            text: "$a_n = 4(n-5)$, $b_n = 2n-27$의 부호에 따라 $c_n = -2n-7\\ (n \\le 5)$, $c_n = 6n-47\\ (6 \\le n \\le 13)$, $c_n = 2n+7\\ (n \\ge 14)$이다. 각 구간의 최솟값은 $c_5 = -17$, $c_6 = -11$, $c_{14} = 35$이므로 $c_n$의 최솟값은 $-17$이다."
+          },
+          {
+            linkId: "dg26-2-s3",
+            step: "(3)",
+            text: "$n \\ge 14$에 대하여 $S_n = \\sum_{k=1}^{13} c_k + \\sum_{k=14}^n (2k+7) = n^2 + 8n - 258$이다. 따라서 $\\lim_{n\\to\\infty} \\frac{S_n}{n^2} = \\lim_{n\\to\\infty} \\left(1 + \\frac{8}{n} - \\frac{258}{n^2}\\right) = 1$이다."
+          }
+        ],
+        checklist: [
+          "조건 ②의 '$n=7$일 때만'에서 등호 없는 부등식 $a_7+b_7 < 0 < a_8+b_8$을 썼는가?",
+          "조건 ③의 절댓값을 벗기기 전에 $b_1, b_2, b_3, b_4 < 0$임을 증명했는가?",
+          "(2)에서 세 구간 $n \\le 5$, $6 \\le n \\le 13$, $n \\ge 14$를 빠짐없이 비교했는가?",
+          "(3)에서 $n \\ge 14$일 때의 합 $S_n$을 명시하고 극한을 계산했는가?"
+        ]
+      },
+      {
+        id: "dg-2026-3",
+        school: "동국대",
+        year: 2026,
+        session: "자연계열",
+        number: "문제 3",
+        title: "삼차함수의 평행이동, 두 접선의 수직과 변곡점 기울기",
+        officialUrl: "https://ipsi.dongguk.edu/upload/file/20260223163919G9MS7D.PDF#page=44",
+        officialPage: "동국대 2026 논술가이드북 p.44",
+        subjects: ["수학 II", "미적분"],
+        accessLevel: "supplement",
+        accessLabel: "변곡점 개념 보충 후 접근",
+        summary: "삼차함수의 변곡점을 원점으로 평행이동해 식을 단순화하고, 접선과 재교점에서의 접선이 수직일 조건을 이차식의 완전제곱으로 풀어 변곡점 기울기의 최댓값을 구하는 문항입니다.",
+        passages: [
+          { label: "【가】", text: "함수 $f(x)$가 $x=a$에서 미분가능할 때, 곡선 $y=f(x)$ 위의 점 $(a, f(a))$에서의 접선의 방정식은 $y - f(a) = f'(a)(x - a)$이다." },
+          { label: "【나】", text: "곡선 $y=f(x)$ 위의 점 $P(a, f(a))$에 대하여 $x=a$의 좌우에서 곡선의 모양이 아래로 볼록에서 위로 볼록으로 바뀌거나 위로 볼록에서 아래로 볼록으로 바뀔 때, 점 $P$를 곡선 $y=f(x)$의 변곡점이라고 한다." },
+          { label: "【다】", text: "이계도함수가 존재하는 함수 $f(x)$에 대하여 $f''(a)=0$이고 $x=a$의 좌우에서 $f''(x)$의 부호가 바뀌면, 점 $(a, f(a))$는 곡선 $y=f(x)$의 변곡점이다." }
+        ],
+        prompt: "다음 <조건>을 만족하는 점 $P$가 존재하는 삼차함수 $f(x)$에 대하여 곡선 $y=f(x)$의 변곡점에서 접선의 기울기의 최댓값 $M$을 다음 순서에 따라 구하시오. (단, $f(x)$의 최고차항의 계수는 양수)<br/><strong>&lt;조건&gt;</strong> 곡선 $y=f(x)$ 위의 점 $P$에서의 접선 $l$이 점 $P$가 아닌 곡선 위의 점 $Q$에서 만나고, 점 $Q$에서의 접선 $m$이 직선 $l$과 수직이다.",
+        subquestions: [
+          {
+            num: "(1)",
+            text: "곡선 $y=f(x)$를 $x$축 및 $y$축의 방향으로 적절히 평행이동하여 항의 개수가 최소가 되는 곡선 $y=g(x)$를 구하시오.",
+            annot: {
+              source: "문제 원문 · 소문항 (1)",
+              quote: "적절히 평행이동하여 항의 개수가 최소가 되는 곡선 y=g(x)",
+              clue: "삼차함수의 변곡점을 원점으로 이동",
+              meaning: "평행이동은 접선의 기울기나 수직 관계를 전혀 바꾸지 않으면서 이차항과 상수항을 동시에 없애줍니다.",
+              reason: "$f''(h)=0$인 $h=-\\frac{B}{3A}$만큼 옮기면 $g(x)=ax^3+bx$가 되고, $b<0$이므로 두 항이 최소입니다.",
+              action: "$g(x) = f(x+h)-f(h) = ax^3+bx$ ($a=A>0, b=C-\\frac{B^2}{3A}$)를 구하고 $b \\neq 0$임을 확인합니다.",
+              caution: "이때 변곡점은 $(0,0)$이고, 구하려는 변곡점 접선의 기울기는 바로 $g'(0)=b$입니다."
+            }
+          },
+          { num: "(2)", text: "곡선 $y=g(x)$ 위의 점 $P_0(t, g(t))$에서의 접선의 방정식을 구하시오." },
+          { num: "(3)", text: "(2)에서 구한 접선과 곡선 $y=g(x)$가 만나는 점 $Q_0 (\\neq P_0)$에서의 접선의 방정식을 구하시오." },
+          {
+            num: "(4)",
+            text: "$M$의 값을 구하시오.",
+            annot: {
+              source: "문제 원문 · 소문항 (4)",
+              quote: "변곡점에서 접선의 기울기의 최댓값 M",
+              clue: "두 접선의 수직 조건 $(3at^2+b)(12at^2+b) = -1$",
+              meaning: "$u = at^2 > 0$으로 치환하면 $a$와 $t$가 한 변수 $u$로 합쳐져 $b$의 상한을 찾는 이차방정식 문제가 됩니다.",
+              reason: "치환 $u = at^2 > 0$을 쓰면 계수 $a$가 사라지고 $36u^2 + 15bu + b^2 + 1 = 0$만 남기 때문입니다.",
+              action: "$b \\ge 0$ 불가능 확인 → 완전제곱으로 $1 - \\frac{9b^2}{16} \\le 0 \\implies b \\le -\\frac{4}{3}$ → 실제 달성 예시 제시.",
+              caution: "부등식 $b \\le -\\frac{4}{3}$만 보이고 끝내면 안 되고, 실제로 $b=-\\frac{4}{3}$일 때 $u>0$ (즉 $t \\neq 0$)인 해가 존재함을 꼭 보여야 합니다."
+            }
+          }
+        ],
+        concepts: [
+          {
+            subject: "미적분 기초",
+            title: "변곡점과 이계도함수",
+            desc: "삼차함수 $f(x)=Ax^3+Bx^2+Cx+D$를 두 번 미분하면 $f''(x)=6Ax+2B$입니다. $f''(x)=0$인 $x=-\\frac{B}{3A}$ 좌우에서 부호가 바뀌므로 이곳이 유일한 변곡점입니다.",
+            example: "$f(x)=x^3-3x^2+2$이면 $f''(x)=6x-6=0 \\implies x=1$이 변곡점.",
+            quizQ: "삼차함수의 변곡점을 원점으로 평행이동하면 어떤 항들이 사라지나요?",
+            quizA: "이차항($x^2$)과 상수항이 사라져 기함수 꼴 $g(x)=ax^3+bx$만 남습니다."
+          },
+          {
+            subject: "수학 II",
+            title: "접점에서의 중근과 나머지 교점",
+            desc: "곡선 $y=ax^3+bx$와 $x=t$에서의 접선을 연립하면 접점 $x=t$가 중근이므로 $a(x-t)^2(x+2t)=0$으로 인수분해됩니다.",
+            example: "세 근의 합이 이차항 계수 $0$과 같으므로 $t + t + x_Q = 0 \\implies x_Q = -2t$.",
+            quizQ: "$Q_0 \\neq P_0$ 조건은 $t$에 어떤 제한을 주나요?",
+            quizA: "$t = -2t$가 되면 안 되므로 반드시 $t \\neq 0$이어야 합니다."
+          }
+        ],
+        formulas: [
+          { type: "문제 제공 공식", name: "접선의 방정식", expr: "$y - g(t) = g'(t)(x-t)$", note: "제시문 【가】" },
+          { type: "유도해서 얻는 식", name: "변곡점 원점 이동", expr: "$g(x) = ax^3 + bx\\ (a>0)$", note: "$h = -\\frac{B}{3A}$만큼 평행이동" },
+          { type: "기본 암기 공식", name: "두 직선의 수직 조건", expr: "$m_1 m_2 = -1$", note: "기울기 곱이 $-1$" },
+          { type: "이 문제 전용 관계식", name: "완전제곱 정리", expr: "$36\\left(u+\\frac{5b}{24}\\right)^2 + 1 - \\frac{9b^2}{16} = 0$", note: "$u = at^2 > 0$ 치환 후 최솟값 판정" }
+        ],
+        designSteps: [
+          { title: "변곡점을 원점으로 평행이동", detail: "$g(x) = ax^3 + bx$ ($a>0$)로 바꿉니다. 평행이동은 기울기를 보존하므로 구할 값은 $b$의 최댓값입니다." },
+          { title: "첫 번째 접선 구하기", detail: "$P_0(t, at^3+bt)$에서 $g'(t)=3at^2+b$이므로 접선은 $y = (3at^2+b)x - 2at^3$입니다." },
+          { title: "재교점 $Q_0$와 두 번째 접선", detail: "연립식 $a(x-t)^2(x+2t)=0$에서 $t \\neq 0$, $Q_0(-2t, -8at^3-2bt)$를 얻고 접선 $y = (12at^2+b)x + 16at^3$을 구합니다." },
+          { title: "수직 조건을 한 변수 이차식으로", detail: "$(3at^2+b)(12at^2+b)=-1$에 $u=at^2>0$을 대입해 $36u^2 + 15bu + b^2 + 1 = 0$을 얻습니다." },
+          { title: "$b$의 상한과 달성 확인", detail: "$b \\ge 0$이면 좌변이 양수라 불가능. $b<0$에서 최솟값 $1-\\frac{9b^2}{16} \\le 0$이므로 $b \\le -\\frac{4}{3}$이고, $u = -\\frac{5b}{24} > 0$에서 실제 달성됨을 보입니다." }
+        ],
+        hints: [
+          "변곡점을 원점으로 옮기면 $g(x) = ax^3 + bx$ ($a > 0$)가 됩니다. 이때 변곡점에서의 접선 기울기는 $g'(0)=b$입니다.",
+          "$t$에서의 접선을 곡선과 연립하면 $a(x-t)^2(x+2t)=0$입니다. $Q_0 \\neq P_0$이므로 $t \\neq 0$입니다.",
+          "$u = at^2 > 0$로 바꾸면 $(3u+b)(12u+b) = -1$입니다. $b$의 부호를 먼저 확인하고 $u$에 대한 이차식을 완전제곱하세요."
+        ],
+        scratchpad: [
+          {
+            linkId: "dg26-3-s1",
+            kind: "도출한 결론",
+            text: "$f(x)=Ax^3+Bx^2+Cx+D$ ($A>0$)에서 $h=-\\frac{B}{3A}$로 두면 $g(x)=f(x+h)-f(h)=ax^3+bx$ ($a=A>0, b=C-\\frac{B^2}{3A}$).",
+            why: "이차항과 상수항을 동시에 없애 계산량을 절반 이하로 줄인다.",
+            confirmed: "$g(x)=ax^3+bx$, 목표는 $g'(0)=b$의 최댓값",
+            remaining: "$P_0(t, g(t))$와 $Q_0$의 접선 식 구하기"
+          },
+          {
+            linkId: "dg26-3-s2",
+            kind: "도출한 결론",
+            text: "$g'(t)=3at^2+b$이므로 $P_0$ 접선: $y=(3at^2+b)x-2at^3$. 곡선과 연립하면 $a(x-t)^2(x+2t)=0 \\implies x=-2t$ ($t \\neq 0$). $Q_0$ 접선: $y=(12at^2+b)x+16at^3$.",
+            why: "두 접선의 기울기가 $3at^2+b$와 $12at^2+b$로 깔끔하게 나온다.",
+            confirmed: "기울기 곱 $(3at^2+b)(12at^2+b) = -1$",
+            remaining: "$u = at^2 > 0$ 치환으로 $b$의 최댓값 찾기"
+          },
+          {
+            linkId: "dg26-3-s3",
+            kind: "도출한 결론",
+            text: "$u=at^2>0$이라 두면 $36u^2+15bu+b^2+1=0$. $b \\ge 0$이면 $36u^2+15bu+b^2+1 > 0$이라 해가 없다. 따라서 $b<0$이고 $36\\left(u+\\frac{5b}{24}\\right)^2 + 1 - \\frac{9b^2}{16} = 0$에서 $1 - \\frac{9b^2}{16} \\le 0 \\implies b \\le -\\frac{4}{3}$.",
+            why: "$b=-\\frac{4}{3}$일 때 꼭짓점 $u = -\\frac{5b}{24} = \\frac{5}{18} > 0$이므로 실제로 $t \\neq 0$인 해가 존재한다.",
+            confirmed: "$M = -\\frac{4}{3}$ ($g(x)=x^3-\\frac{4}{3}x$, $t=\\frac{\\sqrt{10}}{6}$에서 달성)",
+            remaining: "없음 (전체 문항 해결 완료)"
+          }
+        ],
+        solution: [
+          { linkId: "dg26-3-s1", step: "(1)", text: "$f(x)=Ax^3+Bx^2+Cx+D$ ($A>0$)의 변곡점 $(h, f(h))$ ($h=-\\frac{B}{3A}$)를 원점으로 평행이동하면 $g(x)=f(x+h)-f(h)=ax^3+bx$ ($a=A>0,\\; b=C-\\frac{B^2}{3A}$)이다. 수직 조건에서 $b<0$이므로 두 항이 모두 $0$이 아니며 항의 개수가 최소이다." },
+          { linkId: "dg26-3-s2", step: "(2)", text: "$g'(t)=3at^2+b$이므로 점 $P_0(t, at^3+bt)$에서의 접선의 방정식은 $y = (3at^2+b)x - 2at^3$이다." },
+          { linkId: "dg26-3-s2", step: "(3)", text: "접선과 곡선을 연립하면 $a(x-t)^2(x+2t)=0$이므로 $Q_0 \\neq P_0$에서 $t \\neq 0$, $Q_0(-2t, -8at^3-2bt)$이다. $g'(-2t)=12at^2+b$이므로 접선의 방정식은 $y = (12at^2+b)x + 16at^3$이다." },
+          { linkId: "dg26-3-s3", step: "(4)", text: "수직 조건 $(3at^2+b)(12at^2+b)=-1$에 $u=at^2>0$을 대입하면 $36\\left(u+\\frac{5b}{24}\\right)^2 + 1 - \\frac{9b^2}{16} = 0$이다. $b \\ge 0$이면 해가 없으므로 $b<0$이고 $1-\\frac{9b^2}{16} \\le 0$에서 $b \\le -\\frac{4}{3}$이다. $g(x)=x^3-\\frac{4}{3}x$, $t=\\frac{\\sqrt{10}}{6}$일 때 두 기울기가 $-\\frac{1}{2}, 2$로 수직이 되므로 최댓값 $M = -\\frac{4}{3}$이다." }
+        ],
+        checklist: [
+          "(1)에서 변곡점 평행이동과 $b \\neq 0$ (항의 개수 최소) 근거를 밝혔는가?",
+          "(3)에서 $Q_0 \\neq P_0$ 때문에 $t \\neq 0$임을 명시했는가?",
+          "(4)에서 $b \\ge 0$이 불가능함을 보이고 $u=at^2>0$ 조건을 체크했는가?",
+          "$b = -\\frac{4}{3}$이 실제로 달성되는 $u>0$ (또는 구체적 $g(x), t$)을 확인했는가?"
+        ]
+      },
+
+      // ---------------------- 동국대 2025학년도 ----------------------
+      {
+        id: "dg-2025-1",
+        school: "동국대",
+        year: 2025,
+        session: "자연계열",
+        number: "문제 1",
+        title: "교점의 두 근과 벡터 내적으로 두 직선 사이의 각 최소화",
+        officialUrl: "https://ipsi.dongguk.edu/upload/file/20250313091626J7B4YN.PDF#page=43",
+        officialPage: "동국대 2025 논술가이드북 p.43 (<15줄 이내> [30점])",
+        subjects: ["수학", "기하"],
+        accessLevel: "supplement",
+        accessLabel: "새 개념 조금 보충",
+        summary: "이차함수와 직선 $y=x$의 두 교점을 근과 계수의 관계로 묶고, 평면벡터의 내적 공식에 대입해 두 직선이 이루는 각 $\\theta$의 최솟값과 교점 좌표를 구하는 문항입니다.",
+        passages: [
+          { label: "【가】", text: "이차함수 $y=a(x-p)^2+q\\ (a \\neq 0)$는 $a>0$이면 $x=p$에서 최솟값 $q$, $a<0$이면 $x=p$에서 최댓값 $q$를 갖는다." },
+          { label: "【나】", text: "이차방정식 $ax^2+bx+c=0\\ (a \\neq 0)$의 두 근을 $\\alpha, \\beta$라 하면 $\\alpha+\\beta = -\\frac{b}{a}$, $\\alpha\\beta = \\frac{c}{a}$이다." },
+          { label: "【다】", text: "영벡터가 아닌 두 평면벡터 $\\vec{a}=(a_1, a_2)$, $\\vec{b}=(b_1, b_2)$가 이루는 각의 크기를 $\\theta$라 하면 $\\cos\\theta = \\frac{\\vec{a}\\cdot\\vec{b}}{|\\vec{a}||\\vec{b}|} = \\frac{a_1b_1+a_2b_2}{\\sqrt{a_1^2+a_2^2}\\sqrt{b_1^2+b_2^2}}$이다." }
+        ],
+        prompt: "좌표평면 위의 점 $P(0, 1)$이 주어져 있고 이차함수 $y = x^2 + \\left(\\frac{1}{3} - 2k\\right)x + k$와 $y = x$의 두 교점을 $Q_1, Q_2$라고 하자. 점 $P$와 $Q_1$, 점 $P$와 $Q_2$를 지나는 직선을 각각 $l_1, l_2$라 하고 두 직선이 이루는 각을 $\\theta\\ (0 \\le \\theta \\le \\frac{\\pi}{2})$라 할 때 다음을 구하시오.",
+        subquestions: [
+          {
+            num: "(1)",
+            text: "$\\cos\\theta$를 실수 $k$를 이용하여 나타내시오.",
+            annot: {
+              source: "문제 원문 · 소문항 (1)",
+              quote: "두 교점을 Q1, Q2라고 하자 / cos θ를 실수 k를 이용하여",
+              clue: "교점이 $y=x$ 위에 있으므로 $Q_1(\\alpha, \\alpha), Q_2(\\beta, \\beta)$",
+              meaning: "근의 공식으로 $\\alpha, \\beta$를 직접 구하지 말고 근과 계수의 관계($s=\\alpha+\\beta, p=\\alpha\\beta$)로 대칭식을 정리하라는 신호입니다.",
+              reason: "분자 $\\vec{a}\\cdot\\vec{b}$에서 $k$가 깔끔하게 소거되어 $\\frac{1}{3}$이라는 상수가 나옵니다.",
+              action: "연립방정식 $x^2 - 2(k+\\frac{1}{3})x + k = 0$의 판별식 $>0$ 확인 후 $s, p$를 내적 공식에 대입합니다.",
+              caution: "두 직선이 이루는 각이므로 $0 \\le \\theta \\le \\frac{\\pi}{2}$이며, 내적이 $\\frac{1}{3}>0$이어서 절댓값 없이 그대로 $\\cos\\theta > 0$입니다."
+            }
+          },
+          { num: "(2)", text: "$\\theta$가 최솟값을 가질 때의 실수 $k$의 값과 그때의 $\\theta$를 구하시오." },
+          { num: "(3)", text: "$\\theta$가 최솟값을 가질 때의 두 점 $Q_1, Q_2$의 좌표를 구하시오." }
+        ],
+        concepts: [
+          {
+            subject: "기하",
+            title: "평면벡터와 내적 공식",
+            desc: "$P(0,1)$에서 $Q_1(\\alpha, \\alpha)$로 가는 벡터는 $\\vec{a} = (\\alpha, \\alpha-1)$입니다. 제시문 【다】에 그대로 대입하면 내적과 크기가 모두 $\\alpha, \\beta$의 대칭식이 됩니다.",
+            example: "$\\vec{a}\\cdot\\vec{b} = \\alpha\\beta + (\\alpha-1)(\\beta-1) = 2\\alpha\\beta - (\\alpha+\\beta) + 1$.",
+            quizQ: "$0 \\le \\theta \\le \\frac{\\pi}{2}$에서 $\\theta$가 최소가 되려면 $\\cos\\theta$는 최대여야 할까요, 최소여야 할까요?",
+            quizA: "코사인은 $[0, \\frac{\\pi}{2}]$에서 감소함수이므로 $\\theta$가 최소일 때 $\\cos\\theta$가 최대가 됩니다."
+          }
+        ],
+        formulas: [
+          { type: "문제 제공 공식", name: "평면벡터 내적과 각", expr: "$\\cos\\theta = \\frac{\\vec{a}\\cdot\\vec{b}}{|\\vec{a}||\\vec{b}|}$", note: "제시문 【다】" },
+          { type: "기본 암기 공식", name: "대칭식 변환", expr: "$\\alpha^2 + \\beta^2 = (\\alpha+\\beta)^2 - 2\\alpha\\beta$", note: "분모 $|\\vec{a}|^2|\\vec{b}|^2$ 전개 시 사용" }
+        ],
+        designSteps: [
+          { title: "교점을 근과 계수로 묶기", detail: "$x^2 - 2(k+\\frac{1}{3})x + k = 0$에서 판별식 $\\frac{D}{4} > 0$ 확인, $s = 2k+\\frac{2}{3}$, $p = k$ 확보." },
+          { title: "내적 공식에 대입", detail: "분자 $2p-s+1 = \\frac{1}{3}$, 분모 제곱은 $\\frac{36k^2-12k+5}{9}$로 정리되어 $\\cos\\theta = \\frac{1}{\\sqrt{(6k-1)^2+4}}$." },
+          { title: "분모 최소화로 각 최소화", detail: "$k=\\frac{1}{6}$일 때 $\\cos\\theta$ 최대 $\\frac{1}{2}$, 따라서 $\\theta = \\frac{\\pi}{3}$." },
+          { title: "마지막에 두 근 직접 계산", detail: "$k=\\frac{1}{6}$을 대입해 $x^2 - x + \\frac{1}{6} = 0$에서 $x = \\frac{3 \\pm \\sqrt{3}}{6}$." }
+        ],
+        hints: [
+          "교점은 $y=x$ 위에 있으므로 $Q_1(\\alpha,\\alpha), Q_2(\\beta,\\beta)$로 두고 연립하세요.",
+          "$\\alpha+\\beta = 2k+\\frac{2}{3},\\; \\alpha\\beta = k$를 이용해 $\\vec{a}\\cdot\\vec{b}$와 $|\\vec{a}|^2|\\vec{b}|^2$를 $k$로 바꾸세요.",
+          "$\\cos\\theta = \\frac{1}{\\sqrt{(6k-1)^2+4}}$이 나오면 분모가 최소일 때 $\\theta$가 최소입니다."
+        ],
+        scratchpad: [
+          {
+            linkId: "dg25-1-s1",
+            kind: "도출한 결론",
+            text: "연립식 $x^2 - 2(k+\\frac{1}{3})x + k = 0$의 판별식 $\\frac{D}{4} = (k-\\frac{1}{6})^2 + \\frac{1}{12} > 0$. 합 $s = 2k+\\frac{2}{3}$, 곱 $p = k$.",
+            why: "모든 실수 $k$에 대해 서로 다른 두 교점이 존재함이 보장된다.",
+            confirmed: "$s = 2k+\\frac{2}{3},\\; p = k$",
+            remaining: "내적과 크기 제곱을 $s, p$로 정리"
+          },
+          {
+            linkId: "dg25-1-s1",
+            kind: "도출한 결론",
+            text: "$\\vec{a}\\cdot\\vec{b} = 2p-s+1 = \\frac{1}{3} > 0$, $|\\vec{a}|^2|\\vec{b}|^2 = (2\\alpha^2-2\\alpha+1)(2\\beta^2-2\\beta+1) = \\frac{36k^2-12k+5}{9}$. 따라서 $\\cos\\theta = \\frac{1}{\\sqrt{(6k-1)^2+4}}$.",
+            why: "분모의 $9$가 제곱근 밖으로 $3$이 되어 분자의 $\\frac{1}{3}$과 약분된다.",
+            confirmed: "$\\cos\\theta = \\frac{1}{\\sqrt{(6k-1)^2+4}}$",
+            remaining: "(2) 최솟값과 (3) 좌표 구하기"
+          },
+          {
+            linkId: "dg25-1-s2",
+            kind: "도출한 결론",
+            text: "$k=\\frac{1}{6}$에서 $\\cos\\theta$ 최댓값 $\\frac{1}{2}$, 즉 $\\theta_{\\min} = \\frac{\\pi}{3}$. 대입 시 $x^2-x+\\frac{1}{6}=0 \\implies x = \\frac{3\\pm\\sqrt{3}}{6}$.",
+            why: "제시문 【가】의 이차함수 최솟값을 분모에 적용했다.",
+            confirmed: "$k=\\frac{1}{6},\\; \\theta=\\frac{\\pi}{3}$, 좌표 $\\left(\\frac{3\\pm\\sqrt{3}}{6}, \\frac{3\\pm\\sqrt{3}}{6}\\right)$",
+            remaining: "없음"
+          }
+        ],
+        solution: [
+          { linkId: "dg25-1-s1", step: "(1)", text: "두 교점을 $Q_1(\\alpha, \\alpha), Q_2(\\beta, \\beta)$라 하면 $\\alpha, \\beta$는 $x^2 - 2(k+\\frac{1}{3})x + k = 0$의 두 실근($\\frac{D}{4} = (k-\\frac{1}{6})^2 + \\frac{1}{12} > 0$)이다. $s=2k+\\frac{2}{3}, p=k$를 이용하면 $\\overrightarrow{PQ_1}\\cdot\\overrightarrow{PQ_2} = 2p-s+1 = \\frac{1}{3} > 0$이고 $|\\overrightarrow{PQ_1}|^2|\\overrightarrow{PQ_2}|^2 = \\frac{(6k-1)^2+4}{9}$이므로 $\\cos\\theta = \\frac{1}{\\sqrt{(6k-1)^2+4}}$이다." },
+          { linkId: "dg25-1-s2", step: "(2)", text: "$0 \\le \\theta \\le \\frac{\\pi}{2}$에서 $\\cos\\theta$가 최대일 때 $\\theta$가 최소이다. $k=\\frac{1}{6}$일 때 $\\cos\\theta$의 최댓값이 $\\frac{1}{2}$이므로 $\\theta = \\frac{\\pi}{3}$이다." },
+          { linkId: "dg25-1-s2", step: "(3)", text: "$k=\\frac{1}{6}$을 연립방정식에 대입하면 $x^2 - x + \\frac{1}{6} = 0$, 즉 $x = \\frac{3\\pm\\sqrt{3}}{6}$이므로 두 교점은 $\\left(\\frac{3+\\sqrt{3}}{6}, \\frac{3+\\sqrt{3}}{6}\\right)$, $\\left(\\frac{3-\\sqrt{3}}{6}, \\frac{3-\\sqrt{3}}{6}\\right)$이다." }
+        ],
+        checklist: [
+          "판별식 $\\frac{D}{4} > 0$으로 서로 다른 두 실근 존재를 먼저 확인했는가?",
+          "내적이 양수($\\frac{1}{3}>0$)여서 예각 $\\theta$의 코사인과 일치함을 확인했는가?",
+          "(2)에서 $0 \\le \\theta \\le \\frac{\\pi}{2}$ 구간의 감소성을 근거로 들었는가?"
+        ]
+      },
+      {
+        id: "dg-2025-2",
+        school: "동국대",
+        year: 2025,
+        session: "자연계열",
+        number: "문제 2",
+        title: "출제 오류로 비공개된 문항",
+        officialUrl: "https://ipsi.dongguk.edu/upload/file/20250313091626J7B4YN.PDF#page=43",
+        officialPage: "동국대 2025 논술가이드북 p.43",
+        subjects: [],
+        accessLevel: "private",
+        accessLabel: "비공개",
+        isPrivate: true,
+        summary: "출제 오류로 인해 대학이 공식 비공개 처리하고 전원 만점 처리한 문항입니다. 복원 문제나 임의 풀이를 싣지 않습니다."
+      },
+      {
+        id: "dg-2025-3",
+        school: "동국대",
+        year: 2025,
+        session: "자연계열",
+        number: "문제 3",
+        title: "두 곡선의 교점과 넓이를 구하고 합의 극한을 정적분으로 변환",
+        officialUrl: "https://ipsi.dongguk.edu/upload/file/20250313091626J7B4YN.PDF#page=44",
+        officialPage: "동국대 2025 논술가이드북 p.44 (<27줄 이내> [40점])",
+        subjects: ["수학", "수학 I", "수학 II", "미적분"],
+        accessLevel: "supplement",
+        accessLabel: "새 개념 보충",
+        summary: "대칭 관계식에서 두 곡선을 확정해 세 교점과 삼각형 넓이 $A_n$, 둘러싸인 넓이 $S_n$을 구하고, 리만 합을 정적분으로 바꿔 극한을 계산하는 문항입니다.",
+        passages: [
+          { label: "【가】", text: "닫힌구간 $[a, b]$에서 연속이고 $f(x) \\ge 0$일 때 $\\int_a^b f(x)\\,dx$는 곡선과 $x$축 및 두 직선으로 둘러싸인 넓이와 같다." },
+          { label: "【나】", text: "$r \\neq -1$일 때 $\\int x^r\\,dx = \\frac{1}{r+1}x^{r+1}+C$, $r=-1$일 때 $\\int x^{-1}\\,dx = \\ln|x|+C$이다." },
+          { label: "【다】", text: "닫힌구간 $[a, b]$에서 연속인 함수 $f(x)$에 대해 $\\int_a^b f(x)\\,dx = \\lim_{n\\to\\infty}\\sum_{k=1}^n f(x_k)\\Delta x$ ($\\Delta x = \\frac{b-a}{n},\\; x_k = a+k\\Delta x$)." }
+        ],
+        prompt: "실수 $\\alpha, \\beta$는 $\\frac{\\alpha\\beta}{\\alpha-\\beta} = 20n$, $\\alpha+\\beta = 9n$, $\\alpha > \\beta > 0$을 만족한다. 두 곡선 $y=(x-\\alpha)(x-\\beta)$와 $y=\\frac{3\\alpha\\beta(\\alpha-\\beta)}{5x}$로 둘러싸인 도형의 넓이를 $S_n$이라 하자. (단, $n$은 자연수)",
+        subquestions: [
+          { num: "(1)", text: "두 곡선의 교점의 $x$좌표를 $n$을 이용하여 나타내시오." },
+          { num: "(2)", text: "교점을 꼭짓점으로 하는 다각형의 넓이를 $A_n$이라 할 때, $A_n$을 구하시오." },
+          { num: "(3)", text: "$S_n$을 구하시오." },
+          { num: "(4)", text: "$\\lim_{n\\to\\infty}\\frac{1}{n^7}\\sum_{k=1}^n S_k A_{2k}$를 구하시오." }
+        ],
+        concepts: [
+          {
+            subject: "수학",
+            title: "합·곱·차 항등식",
+            desc: "$d = \\alpha - \\beta > 0$이라 두면 $(\\alpha+\\beta)^2 - d^2 = 4\\alpha\\beta$를 통해 $\\alpha, \\beta$를 따로 구하지 않고도 $d$와 $\\alpha\\beta$를 바로 얻습니다.",
+            example: "$81n^2 - d^2 = 80nd \\implies (d-n)(d+81n)=0 \\implies d=n$.",
+            quizQ: "왜 $d = -81n$은 버리나요?",
+            quizA: "조건에 $\\alpha > \\beta > 0$과 자연수 $n$이 있으므로 $d = \\alpha - \\beta > 0$이어야 합니다."
+          },
+          {
+            subject: "미적분",
+            title: "$\\frac{1}{x}$ 적분과 구분구적법(리만 합)",
+            desc: "$x>0$에서 $\\int \\frac{1}{x}\\,dx = \\ln x + C$이고, $\\lim_{n\\to\\infty}\\frac{1}{n}\\sum_{k=1}^n \\left(\\frac{k}{n}\\right)^6 = \\int_0^1 x^6\\,dx = \\frac{1}{7}$입니다.",
+            example: "$S_k A_{2k} = 80Ck^6$이면 $\\frac{1}{n^7}\\sum_{k=1}^n 80Ck^6 = 80C \\cdot \\frac{1}{n}\\sum_{k=1}^n (\\frac{k}{n})^6 \\to \\frac{80C}{7}$.",
+            quizQ: "$A_{2k}$에서 $2k$를 대입할 때 주의할 점은?",
+            quizA: "$A_n = 10n^3$이므로 $A_{2k} = 10(2k)^3 = 80k^3$입니다. $2$를 세제곱해 $8$이 됨을 놓치지 마세요."
+          }
+        ],
+        formulas: [
+          { type: "기본 암기 공식", name: "합·차 항등식", expr: "$(\\alpha+\\beta)^2 - (\\alpha-\\beta)^2 = 4\\alpha\\beta$", note: "$d=\\alpha-\\beta$ 구할 때 사용" },
+          { type: "문제 제공 공식", name: "로그 적분 & 리만 합", expr: "$\\int x^{-1}dx = \\ln|x|+C,\\; \\lim\\frac{1}{n}\\sum f(\\frac{k}{n}) = \\int_0^1 f(x)dx$", note: "제시문 【나】, 【다】" }
+        ],
+        designSteps: [
+          { title: "두 곡선 확정 및 교점 구하기", detail: "$d=\\alpha-\\beta=n$, $\\alpha\\beta=20n^2$에서 $y=x^2-9nx+20n^2$와 $y=\\frac{12n^3}{x}$를 연립해 $(x-n)(x-2n)(x-6n)=0$을 얻습니다." },
+          { title: "삼각형 넓이 $A_n$ 계산", detail: "세 교점 $(n, 12n^2), (2n, 6n^2), (6n, 2n^2)$에서 양 끝을 잇는 직선과 $x=2n$의 세로 길이 차 $4n^2$을 이용해 $A_n = \\frac{1}{2}(4n^2)(5n) = 10n^3$을 구합니다." },
+          { title: "부호 구간별 정적분으로 $S_n$ 구하기", detail: "$[n,2n]$에서는 $h(x)>0$, $[2n,6n]$에서는 $h(x)<0$이므로 두 구간을 나누어 적분해 $S_n = (\\frac{7}{2}+12\\ln\\frac{3}{2})n^3$을 얻습니다." },
+          { title: "합의 극한을 정적분으로 변환", detail: "$S_k A_{2k} = 80Ck^6$이므로 $\\frac{80C}{7} = 40 + \\frac{960}{7}\\ln\\frac{3}{2}$." }
+        ],
+        hints: [
+          "$d = \\alpha - \\beta > 0$이라 두고 $(\\alpha+\\beta)^2 - d^2 = 4\\alpha\\beta$에 대입해 $d=n$을 얻으세요.",
+          "연립식은 $(x-n)(x-2n)(x-6n)=0$으로 인수분해됩니다.",
+          "두 곡선의 차는 $[n,2n]$에서 양수, $[2n,6n]$에서 음수이며, 마지막은 $\\frac{1}{n}\\sum(\\frac{k}{n})^6$을 정적분으로 바꿉니다."
+        ],
+        scratchpad: [
+          { linkId: "dg25-3-s1", kind: "도출한 결론", text: "$d=\\alpha-\\beta=n$, $\\alpha\\beta=20n^2$. 연립식 $x^3-9nx^2+20n^2x-12n^3 = (x-n)(x-2n)(x-6n)=0$.", why: "조립제법으로 $x=n$을 넣으면 바로 인수분해된다.", confirmed: "교점 $x=n, 2n, 6n$", remaining: "(2) 삼각형 넓이 $A_n$" },
+          { linkId: "dg25-3-s2", kind: "도출한 결론", text: "$A(n,12n^2), B(2n,6n^2), C(6n,2n^2)$. 직선 $AC$의 $x=2n$ 함숫값은 $10n^2$이므로 세로 차 $4n^2$. 넓이 $A_n = \\frac{1}{2}(4n^2)(6n-n) = 10n^3$.", why: "점과 직선 거리 공식보다 세로 분할이 훨씬 빠르고 실수가 적다.", confirmed: "$A_n = 10n^3$", remaining: "(3) 정적분으로 $S_n$ 구하기" },
+          { linkId: "dg25-3-s3", kind: "도출한 결론", text: "$h(x) = x^2-9nx+20n^2-\\frac{12n^3}{x}$의 원시함수 $F(x)=\\frac{x^3}{3}-\\frac{9n}{2}x^2+20n^2x-12n^3\\ln x$. $S_n = 2F(2n)-F(n)-F(6n) = (\\frac{7}{2}+12\\ln\\frac{3}{2})n^3$.", why: "$[n,2n]$은 $+h$, $[2n,6n]$은 $-h$ 적분이므로 $2F(2n)-F(n)-F(6n)$으로 묶인다.", confirmed: "$S_n = (\\frac{7}{2}+12\\ln\\frac{3}{2})n^3$", remaining: "(4) 극한 계산" },
+          { linkId: "dg25-3-s4", kind: "도출한 결론", text: "$C=\\frac{7}{2}+12\\ln\\frac{3}{2}$라 하면 $S_k A_{2k} = 80Ck^6$. 극한은 $80C\\int_0^1 x^6\\,dx = \\frac{80C}{7} = 40 + \\frac{960}{7}\\ln\\frac{3}{2}$.", why: "$A_{2k} = 10(2k)^3 = 80k^3$임에 주의.", confirmed: "$40 + \\frac{960}{7}\\ln\\frac{3}{2}$", remaining: "없음" }
+        ],
+        solution: [
+          { linkId: "dg25-3-s1", step: "(1)", text: "$d=\\alpha-\\beta>0$이라 하면 $\\alpha\\beta=20nd$이고 $81n^2-d^2=80nd$에서 $d=n, \\alpha\\beta=20n^2$이다. 두 곡선 $y=x^2-9nx+20n^2$과 $y=\\frac{12n^3}{x}$의 연립식 $(x-n)(x-2n)(x-6n)=0$에서 교점의 $x$좌표는 $n, 2n, 6n$이다." },
+          { linkId: "dg25-3-s2", step: "(2)", text: "세 교점 $A(n,12n^2), B(2n,6n^2), C(6n,2n^2)$에 대하여 직선 $AC$ 위의 $x=2n$인 점의 $y$좌표는 $10n^2$이다. 따라서 삼각형 $ABC$의 넓이는 $A_n = \\frac{1}{2}(10n^2-6n^2)(6n-n) = 10n^3$이다." },
+          { linkId: "dg25-3-s3", step: "(3)", text: "$h(x)=x^2-9nx+20n^2-\\frac{12n^3}{x}$는 $[n,2n]$에서 $h(x)\\ge 0$, $[2n,6n]$에서 $h(x)\\le 0$이다. 부정적분 $F(x)=\\frac{x^3}{3}-\\frac{9n}{2}x^2+20n^2x-12n^3\\ln x$를 이용하면 $S_n = 2F(2n)-F(n)-F(6n) = \\left(\\frac{7}{2}+12\\ln\\frac{3}{2}\\right)n^3$이다." },
+          { linkId: "dg25-3-s4", step: "(4)", text: "$C=\\frac{7}{2}+12\\ln\\frac{3}{2}$라 하면 $S_k A_{2k} = 80Ck^6$이므로 $\\lim_{n\\to\\infty}\\frac{1}{n^7}\\sum_{k=1}^n S_k A_{2k} = 80C\\int_0^1 x^6\\,dx = \\frac{80}{7}C = 40 + \\frac{960}{7}\\ln\\frac{3}{2}$이다." }
+        ],
+        checklist: [
+          "$\\alpha > \\beta > 0$ 조건으로 $d = n$을 선택했는가?",
+          "(3)에서 $[n,2n]$과 $[2n,6n]$의 위아래 함수 부호를 확인해 나누어 적분했는가?",
+          "(4)에서 $A_{2k} = 10(2k)^3 = 80k^3$ 계산을 정확히 했는가?"
+        ]
+      },
+
+      // ---------------------- 광운대 2026학년도 (4문항) ----------------------
+      {
+        id: "kw-2026-1-1",
+        school: "광운대",
+        year: 2026,
+        session: "자연계열 1교시",
+        number: "문제 1",
+        title: "집합의 경우의 수, 삼각형의 겹친 넓이, 절댓값 적분",
+        officialUrl: "https://iphak.kw.ac.kr/_common/new_download_file.php?file_no=737&menu=boardfile#page=1",
+        officialPage: "광운대 2026 자연계열 1교시 공식 PDF p.1",
+        subjects: ["수학", "수학 I", "수학 II", "확률과 통계"],
+        accessLevel: "ready",
+        accessLabel: "현재 범위로 접근 가능",
+        summary: "수능 수학(수1·수2·확통) 범위만으로 바로 도전할 수 있는 광운대 1교시 1번입니다. 소문항 5개([1], [2]-(1), [2]-(2), [3]-(1), [3]-(2))로 구성됩니다.",
+        subquestionList: ["[1]", "[2]-(1)", "[2]-(2)", "[3]-(1)", "[3]-(2)"],
+        isSummaryOnly: true
+      },
+      {
+        id: "kw-2026-1-2",
+        school: "광운대",
+        year: 2026,
+        session: "자연계열 1교시",
+        number: "문제 2",
+        title: "삼각함수 공식의 증명, 복소수와 로그, 원과 직선의 넓이",
+        officialUrl: "https://iphak.kw.ac.kr/_common/new_download_file.php?file_no=737&menu=boardfile#page=10",
+        officialPage: "광운대 2026 자연계열 1교시 공식 PDF p.10",
+        subjects: ["수학", "수학 I", "수학 II", "미적분"],
+        accessLevel: "supplement",
+        accessLabel: "새 개념 보충",
+        summary: "삼각함수 공식 증명, 복소수·로그 성질, 원과 직선이 이루는 도형의 넓이를 다루는 5개 소문항([1]-(1), [1]-(2), [2], [3]-(1), [3]-(2)) 구성입니다.",
+        subquestionList: ["[1]-(1)", "[1]-(2)", "[2]", "[3]-(1)", "[3]-(2)"],
+        isSummaryOnly: true
+      },
+      {
+        id: "kw-2026-2-1",
+        school: "광운대",
+        year: 2026,
+        session: "자연계열 2교시",
+        number: "문제 1",
+        title: "중첩된 합, 이차함수의 교점, 비교차 선분, 표본평균",
+        officialUrl: "https://iphak.kw.ac.kr/_common/new_download_file.php?file_no=741&menu=boardfile#page=1",
+        officialPage: "광운대 2026 자연계열 2교시 공식 PDF p.1",
+        subjects: ["수학", "수학 I", "확률과 통계"],
+        accessLevel: "ready",
+        accessLabel: "현재 범위로 접근 가능",
+        summary: "미적분·기하 없이 현재 범위(수학·수1·확통)로 우선 공략하기 좋은 5개 소문항([1], [2]-(1), [2]-(2), [3], [4]) 구성입니다.",
+        subquestionList: ["[1]", "[2]-(1)", "[2]-(2)", "[3]", "[4]"],
+        isSummaryOnly: true
+      },
+      {
+        id: "kw-2026-2-2",
+        school: "광운대",
+        year: 2026,
+        session: "자연계열 2교시",
+        number: "문제 2",
+        title: "근과 계수, 적분방정식, 적분 부등식의 논증",
+        officialUrl: "https://iphak.kw.ac.kr/_common/new_download_file.php?file_no=741&menu=boardfile#page=8",
+        officialPage: "광운대 2026 자연계열 2교시 공식 PDF p.8",
+        subjects: ["수학", "수학 I", "수학 II", "미적분"],
+        accessLevel: "advanced",
+        accessLabel: "여러 선수 개념 필요",
+        summary: "미적분 적분방정식과 적분 부등식 논증이 포함된 5개 소문항([1]-(1), [1]-(2), [2], [3]-(1), [3]-(2))으로, 선수 개념 보충 후 도전하는 것을 권장합니다.",
+        subquestionList: ["[1]-(1)", "[1]-(2)", "[2]", "[3]-(1)", "[3]-(2)"],
+        isSummaryOnly: true
+      },
+
+      // ---------------------- 광운대 2025학년도 (4문항) ----------------------
+      {
+        id: "kw-2025-1-1",
+        school: "광운대",
+        year: 2025,
+        session: "자연계열 1교시",
+        number: "문제 1",
+        title: "직각삼각형의 두 원과 조건 있는 좌석 배열",
+        officialUrl: "https://iphak.kw.ac.kr/_common/new_download_file.php?file_no=691&menu=boardfile#page=3",
+        officialPage: "광운대 2025 자연계열 공식 PDF p.3",
+        subjects: ["수학"],
+        accessLevel: "ready",
+        accessLabel: "현재 범위로 접근 가능",
+        summary: "고1 수학·경우의수 기반으로 바로 접근 가능한 5개 소문항([1]-(1), [1]-(2), [2]-(1), [2]-(2), [2]-(3))입니다.",
+        subquestionList: ["[1]-(1)", "[1]-(2)", "[2]-(1)", "[2]-(2)", "[2]-(3)"],
+        isSummaryOnly: true
+      },
+      {
+        id: "kw-2025-1-2",
+        school: "광운대",
+        year: 2025,
+        session: "자연계열 1교시",
+        number: "문제 2",
+        title: "인수분해, 합의 극한, 반복 합성과 역함수",
+        officialUrl: "https://iphak.kw.ac.kr/_common/new_download_file.php?file_no=691&menu=boardfile#page=17",
+        officialPage: "광운대 2025 자연계열 공식 PDF p.17",
+        subjects: ["수학", "수학 I", "수학 II", "미적분"],
+        accessLevel: "supplement",
+        accessLabel: "일부 새 개념 보충",
+        summary: "인수분해·합의 극한·반복 합성 및 역함수를 다루는 5개 소문항([1], [2], [3], [4]-(1), [4]-(2)) 구성입니다.",
+        subquestionList: ["[1]", "[2]", "[3]", "[4]-(1)", "[4]-(2)"],
+        isSummaryOnly: true
+      },
+      {
+        id: "kw-2025-2-1",
+        school: "광운대",
+        year: 2025,
+        session: "자연계열 2교시",
+        number: "문제 1",
+        title: "일대일함수 확률, 매개변수 이차함수와 정규근사",
+        officialUrl: "https://iphak.kw.ac.kr/_common/new_download_file.php?file_no=691&menu=boardfile#page=25",
+        officialPage: "광운대 2025 자연계열 공식 PDF p.25",
+        subjects: ["수학", "수학 I", "수학 II", "미적분", "확률과 통계"],
+        accessLevel: "ready",
+        accessLabel: "대부분 현재 범위로 접근 가능",
+        summary: "확률과 통계(일대일함수 확률·정규근사) 비중이 높아 현재 수준에서 우선 풀이하기 좋은 5개 소문항([1], [2]-(1), [2]-(2), [3], [4])입니다.",
+        subquestionList: ["[1]", "[2]-(1)", "[2]-(2)", "[3]", "[4]"],
+        isSummaryOnly: true
+      },
+      {
+        id: "kw-2025-2-2",
+        school: "광운대",
+        year: 2025,
+        session: "자연계열 2교시",
+        number: "문제 2",
+        title: "모든 두 실수에 대한 부등식, 원뿔 최적화와 접선 반복",
+        officialUrl: "https://iphak.kw.ac.kr/_common/new_download_file.php?file_no=691&menu=boardfile#page=32",
+        officialPage: "광운대 2025 자연계열 공식 PDF p.32",
+        subjects: ["수학 I", "수학 II", "미적분"],
+        accessLevel: "supplement",
+        accessLabel: "소문항별 새 개념 보충",
+        summary: "부등식 논증, 원뿔 최적화, 접선 반복을 다루는 5개 소문항([1], [2]-(1), [2]-(2), [3]-(1), [3]-(2)) 구성입니다.",
+        subquestionList: ["[1]", "[2]-(1)", "[2]-(2)", "[3]-(1)", "[3]-(2)"],
+        isSummaryOnly: true
+      }
+    ];
+    // =========================================================================
+    // [DATA END]
+    // =========================================================================
+
+    const STORAGE_KEY = "nonsul_lab_records_v1";
+    const STATUS_META = {
+      unsolved: { label: "미해결", dot: "bg-slate-300", badge: "bg-slate-100 text-slate-600" },
+      understood: { label: "해설을 보고 이해", dot: "bg-amber-400", badge: "bg-amber-100 text-amber-800" },
+      hint: { label: "힌트 사용", dot: "bg-blue-400", badge: "bg-blue-100 text-blue-700" },
+      solved: { label: "혼자 해결", dot: "bg-emerald-500", badge: "bg-emerald-100 text-emerald-800" }
+    };
+
+    const state = {
+      selectedId: PROBLEMS[0].id,
+      schoolFilter: "전체",
+      yearFilter: "all",
+      sessionFilter: "all",
+      accessFilter: "all",
+      searchQuery: "",
+      activeTab: "원문",
+      mode: "study", // "study" | "solo"
+      designRevealed: {},
+      hintsShown: {},
+      pinnedAnnot: null,
+      hoverAnnot: null,
+      activeLinkId: null,
+      timerRunning: false,
+      timerInterval: null,
+      records: {}
+    };
+
+    function loadRecords() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) state.records = JSON.parse(raw);
+      } catch (e) {
+        state.records = {};
+      }
+    }
+
+    function saveRecords() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
+      } catch (e) {
+        // sandboxed storage fallback
+      }
+    }
+
+    function getRecord(id) {
+      if (!state.records[id]) {
+        state.records[id] = { status: "unsolved", memo: "", soloMemo: "", timerSec: 0, checklist: {} };
+      }
+      return state.records[id];
+    }
+
+    function showToast(msg) {
+      const container = document.getElementById("toastContainer");
+      const el = document.createElement("div");
+      el.className = "pointer-events-auto bg-[#0f1e36] text-white text-xs font-medium px-4 py-2.5 rounded-xl shadow-lg border border-white/10 transition-opacity duration-300";
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(() => { el.style.opacity = "0"; }, 2600);
+      setTimeout(() => { el.remove(); }, 3000);
+    }
+
+    function formatTime(sec) {
+      const m = String(Math.floor(sec / 60)).padStart(2, "0");
+      const s = String(sec % 60).padStart(2, "0");
+      return `${m}:${s}`;
+    }
+
+    function fallbackFormatTex(tex) {
+      return tex
+        .replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, "($1)/($2)")
+        .replace(/\\sqrt\{([^{}]+)\}/g, "√($1)")
+        .replace(/\\left|\\right/g, "")
+        .replace(/\\alpha/g, "α").replace(/\\beta/g, "β").replace(/\\gamma/g, "γ")
+        .replace(/\\theta/g, "θ").replace(/\\pi/g, "π").replace(/\\infty/g, "∞")
+        .replace(/\\perp/g, "⊥").replace(/\\parallel/g, "∥").replace(/\\angle/g, "∠")
+        .replace(/\\neq/g, "≠").replace(/\\le/g, "≤").replace(/\\ge/g, "≥")
+        .replace(/\\pm/g, "±").replace(/\\cdot/g, "·").replace(/\\to/g, "→")
+        .replace(/\\implies/g, "⇒").replace(/\\sum/g, "∑").replace(/\\int/g, "∫")
+        .replace(/\\lim/g, "lim").replace(/\\cos/g, "cos").replace(/\\ln/g, "ln")
+        .replace(/\\triangle/g, "△").replace(/\\mathbb\{N\}/g, "ℕ")
+        .replace(/\\overrightarrow\{([^{}]+)\}/g, "$1⃗").replace(/\\vec\{([^{}]+)\}/g, "$1⃗")
+        .replace(/\\text\{([^{}]+)\}/g, "$1").replace(/\\;/g, " ").replace(/\\,/g, " ")
+        .replace(/\\\{/g, "{").replace(/\\\}/g, "}");
+    }
+
+    function applyFallbackMath(el) {
+      if (!el || window.renderMathInElement) return;
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) {
+        if (walker.currentNode.nodeValue && walker.currentNode.nodeValue.includes("$")) {
+          nodes.push(walker.currentNode);
+        }
+      }
+      nodes.forEach(n => {
+        n.nodeValue = n.nodeValue.replace(/\$\$([^$]+)\$\$/g, (_, m) => fallbackFormatTex(m))
+                                 .replace(/\$([^$]+)\$/g, (_, m) => fallbackFormatTex(m));
+      });
+    }
+
+    let katexFallbackArmed = false;
+    function renderMath(el) {
+      if (!el) return;
+      if (window.renderMathInElement) {
+        try {
+          window.renderMathInElement(el, {
+            delimiters: [
+              { left: "$$", right: "$$", display: true },
+              { left: "$", right: "$", display: false }
+            ],
+            throwOnError: false
+          });
+          return;
+        } catch (e) {
+          // fall through
+        }
+      }
+      if (katexFallbackArmed) {
+        applyFallbackMath(el);
+      }
+    }
+
+    window.__onKatexLoad = function () {
+      renderMath(document.getElementById("mainContent"));
+      renderMath(document.getElementById("annotPanelBody"));
+      renderMath(document.getElementById("mobileAnnotBody"));
+    };
+
+    function getAccessBadgeClass(level) {
+      if (level === "ready") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      if (level === "supplement") return "bg-teal-50 text-teal-700 border-teal-200";
+      if (level === "advanced") return "bg-amber-50 text-amber-800 border-amber-200";
+      return "bg-rose-50 text-rose-700 border-rose-200";
+    }
+
+    function getScratchKindClass(kind) {
+      if (kind === "주어진 조건") return "bg-slate-100 text-slate-700 border-slate-300";
+      if (kind === "도출한 결론") return "bg-blue-50 text-blue-700 border-blue-200";
+      if (kind === "중단한 접근") return "bg-amber-50 text-amber-800 border-amber-300";
+      return "bg-purple-50 text-purple-700 border-purple-200";
+    }
+
+    function getFilteredProblems() {
+      const q = state.searchQuery.trim().toLowerCase();
+      return PROBLEMS.filter(p => {
+        if (state.schoolFilter !== "전체" && p.school !== state.schoolFilter) return false;
+        if (state.yearFilter !== "all" && String(p.year) !== state.yearFilter) return false;
+        if (state.sessionFilter !== "all" && !p.session.includes(state.sessionFilter)) return false;
+        if (state.accessFilter !== "all" && p.accessLevel !== state.accessFilter) return false;
+        if (q) {
+          const hay = `${p.school} ${p.year} ${p.number} ${p.title} ${p.summary} ${(p.subjects || []).join(" ")} ${p.accessLabel}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+    }
+
+    function initFilters() {
+      const schools = ["전체", ...Array.from(new Set(PROBLEMS.map(p => p.school)))];
+      const tabsEl = document.getElementById("schoolTabs");
+      tabsEl.innerHTML = schools.map(s => `
+        <button type="button" data-school="${s}" class="school-tab-btn px-2.5 py-1 rounded-md text-xs font-semibold transition ${state.schoolFilter === s ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}">${s}</button>
+      `).join("");
+      tabsEl.querySelectorAll(".school-tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.schoolFilter = btn.dataset.school;
+          initFilters();
+          renderSidebarList();
+        });
+      });
+
+      const years = Array.from(new Set(PROBLEMS.map(p => p.year))).sort((a, b) => b - a);
+      const yearSelect = document.getElementById("yearFilter");
+      if (yearSelect.options.length <= 1) {
+        years.forEach(y => {
+          const opt = document.createElement("option");
+          opt.value = String(y);
+          opt.textContent = `${y}학년도`;
+          yearSelect.appendChild(opt);
+        });
+      }
+
+      const sessionSelect = document.getElementById("sessionFilter");
+      if (sessionSelect.options.length <= 1) {
+        ["1교시", "2교시"].forEach(s => {
+          const opt = document.createElement("option");
+          opt.value = s;
+          opt.textContent = s;
+          sessionSelect.appendChild(opt);
+        });
+      }
+    }
+
+    function renderExamSchedule() {
+      const list = document.getElementById("examScheduleList");
+      const today = new Date("2026-11-21T00:00:00+09:00");
+      list.innerHTML = EXAMS.map(ex => {
+        const d = new Date(`${ex.date}T00:00:00+09:00`);
+        const diff = Math.round((d - today) / 86400000);
+        const dTag = diff === 0 ? "D-Day" : diff > 0 ? `D-${diff}` : `D+${Math.abs(diff)}`;
+        const urgent = diff >= 0 && diff <= 2 ? "text-rose-600 font-bold" : "text-blue-600 font-semibold";
+        return `<div class="flex items-center justify-between"><span>${ex.school} ${ex.label}</span><span class="${urgent} text-[10px]">${dTag}</span></div>`;
+      }).join("");
+    }
+
+    function renderSidebarList() {
+      const items = getFilteredProblems();
+      const pubCount = PROBLEMS.filter(p => !p.isPrivate).length;
+      const privCount = PROBLEMS.filter(p => p.isPrivate).length;
+      document.getElementById("problemCountLabel").textContent = `공개 ${pubCount} · 비공개 ${privCount}`;
+
+      const html = items.length ? items.map(p => {
+        const active = p.id === state.selectedId;
+        const rec = getRecord(p.id);
+        const st = STATUS_META[rec.status] || STATUS_META.unsolved;
+        return `
+          <button type="button" data-pid="${p.id}" class="problem-item-btn w-full text-left p-2.5 rounded-xl border transition ${active ? "bg-blue-50/90 border-blue-400 shadow-xs" : "bg-white border-slate-200/80 hover:border-slate-300 hover:bg-slate-50"}">
+            <div class="flex items-center justify-between gap-1.5 mb-1">
+              <span class="text-[11px] font-bold ${active ? "text-blue-700" : "text-slate-600"}">${p.school} ${p.year} · ${p.session.replace("자연계열 ", "")} ${p.number}</span>
+              <span class="w-2 h-2 rounded-full shrink-0 ${p.isPrivate ? "bg-rose-400" : st.dot}" title="${p.isPrivate ? "비공개" : st.label}"></span>
+            </div>
+            <div class="text-xs font-medium text-slate-800 line-clamp-2 leading-snug">${p.title}</div>
+            <div class="mt-1.5 flex items-center gap-1 flex-wrap">
+              <span class="text-[10px] px-1.5 py-0.5 rounded border ${getAccessBadgeClass(p.accessLevel)}">${p.accessLabel}</span>
+              ${!p.isPrivate && !p.isSummaryOnly ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">상세 해설</span>` : ""}
+            </div>
+          </button>
+        `;
+      }).join("") : `<div class="text-xs text-slate-400 text-center py-8">조건에 맞는 문항이 없습니다.</div>`;
+
+      document.getElementById("problemList").innerHTML = html;
+      document.getElementById("mobileSidebarSlot").innerHTML = html;
+
+      document.querySelectorAll(".problem-item-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          selectProblem(btn.dataset.pid);
+          document.getElementById("mobileDrawer").classList.add("hidden");
+        });
+      });
+    }
+
+    function selectProblem(id) {
+      if (!PROBLEMS.some(p => p.id === id)) return;
+      stopTimer();
+      state.selectedId = id;
+      state.pinnedAnnot = null;
+      state.hoverAnnot = null;
+      state.activeLinkId = null;
+      if (window.location.hash !== `#${id}`) {
+        history.replaceState(null, "", `#${id}`);
+      }
+      renderSidebarList();
+      renderMain();
+      renderAnnotationPanel();
+    }
+
+    function setMode(newMode) {
+      if (state.mode === newMode) return;
+      state.mode = newMode;
+      state.pinnedAnnot = null;
+      state.hoverAnnot = null;
+      if (newMode === "solo") {
+        state.activeTab = "원문";
+        showToast("새 시도를 시작했어요. 해설과 주석을 가렸습니다.");
+      } else {
+        showToast("해설 공부 모드로 전환했습니다.");
+      }
+      updateModeButtons();
+      renderMain();
+      renderAnnotationPanel();
+    }
+
+    function updateModeButtons() {
+      const studyBtn = document.getElementById("modeStudyBtn");
+      const soloBtn = document.getElementById("modeSoloBtn");
+      if (state.mode === "study") {
+        studyBtn.className = "px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-[#0f1e36] shadow-xs transition";
+        soloBtn.className = "px-3 py-1.5 rounded-md text-xs font-semibold text-slate-300 hover:text-white transition";
+      } else {
+        soloBtn.className = "px-3 py-1.5 rounded-md text-xs font-semibold bg-blue-500 text-white shadow-xs transition";
+        studyBtn.className = "px-3 py-1.5 rounded-md text-xs font-semibold text-slate-300 hover:text-white transition";
+      }
+    }
+
+    function stopTimer() {
+      if (state.timerInterval) {
+        clearInterval(state.timerInterval);
+        state.timerInterval = null;
+      }
+      state.timerRunning = false;
+    }
+
+    function renderAnnotationPanel() {
+      const body = document.getElementById("annotPanelBody");
+      const mobileBody = document.getElementById("mobileAnnotBody");
+      const pinBadge = document.getElementById("annotPinnedBadge");
+      const active = state.pinnedAnnot || state.hoverAnnot;
+
+      if (state.mode === "solo") {
+        pinBadge.classList.add("hidden");
+        const html = `
+          <div class="rounded-xl bg-white border border-slate-200 p-4 space-y-3">
+            <div class="text-sm font-bold text-slate-800">지금은 내 힘으로 풀어 볼 시간</div>
+            <p class="text-xs text-slate-600 leading-relaxed">주석과 풀이 해설을 가려 두었어요. 스스로 조건을 읽고 식을 세워 본 뒤, 막히면 단계별 힌트를 하나씩 열어 보세요.</p>
+            <button id="unlockFromAnnotBtn" type="button" class="w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition">해설 공부 모드로 전환</button>
+          </div>
+        `;
+        body.innerHTML = html;
+        mobileBody.innerHTML = html;
+        document.querySelectorAll("#unlockFromAnnotBtn").forEach(b => b.addEventListener("click", () => setMode("study")));
+        return;
+      }
+
+      if (!active) {
+        pinBadge.classList.add("hidden");
+        const html = `
+          <div class="rounded-xl bg-white border border-slate-200 p-4 space-y-2.5">
+            <div class="text-sm font-bold text-slate-800">이 부분에서 무슨 생각을 할까요?</div>
+            <p class="text-xs text-slate-600 leading-relaxed">본문의 파란색 <span class="font-semibold text-blue-600">설명</span> 버튼이나 현장 연습지 블록에 마우스를 올리면 미리 볼 수 있고, 클릭하면 이 창에 고정됩니다.</p>
+          </div>
+        `;
+        body.innerHTML = html;
+        mobileBody.innerHTML = html;
+        return;
+      }
+
+      if (state.pinnedAnnot) pinBadge.classList.remove("hidden");
+      else pinBadge.classList.add("hidden");
+
+      let html = "";
+      if (active.type === "scratch") {
+        html = `
+          <div class="rounded-xl bg-white border border-blue-200 p-4 space-y-3 shadow-xs">
+            <div class="text-[11px] font-bold text-blue-600">현장 연습지 · ${active.kind}</div>
+            <div class="text-xs text-slate-700 bg-slate-50 border-l-3 border-blue-500 pl-3 py-2 rounded-r leading-relaxed">${active.text}</div>
+            <div>
+              <div class="text-[11px] font-bold text-slate-500 mb-0.5">왜 이렇게 생각하나요?</div>
+              <p class="text-xs text-slate-700 leading-relaxed">${active.why}</p>
+            </div>
+            <div class="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
+              <div class="text-[11px] font-bold text-emerald-800 mb-0.5">여기까지 확정한 것</div>
+              <div class="text-xs text-emerald-900">${active.confirmed}</div>
+            </div>
+            <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+              <div class="text-[11px] font-bold text-slate-600 mb-0.5">다음에 구해야 할 것</div>
+              <div class="text-xs text-slate-800">${active.remaining}</div>
+            </div>
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+              <button type="button" class="jump-linked-btn text-xs font-semibold text-blue-600 hover:underline" data-link="${active.linkId}">연결된 답안 보기 →</button>
+              ${state.pinnedAnnot ? `<button type="button" class="unpin-annot-btn text-xs text-slate-500 hover:text-slate-800">고정 해제</button>` : ""}
+            </div>
+          </div>
+        `;
+      } else {
+        html = `
+          <div class="rounded-xl bg-white border border-blue-200 p-4 space-y-3 shadow-xs">
+            <div class="text-[11px] font-bold text-blue-600">${active.source}</div>
+            <div class="text-xs text-slate-700 bg-slate-50 border-l-3 border-blue-500 pl-3 py-2 rounded-r leading-relaxed">${active.quote}</div>
+            <div class="space-y-2.5 text-xs">
+              <div><div class="font-bold text-slate-500 text-[11px]">먼저 볼 단서</div><div class="text-slate-800 mt-0.5">${active.clue}</div></div>
+              <div><div class="font-bold text-slate-500 text-[11px]">이 조건의 의미</div><div class="text-slate-800 mt-0.5 leading-relaxed">${active.meaning}</div></div>
+              <div><div class="font-bold text-slate-500 text-[11px]">이 생각을 떠올리는 이유</div><div class="text-slate-800 mt-0.5 leading-relaxed">${active.reason}</div></div>
+              <div><div class="font-bold text-slate-500 text-[11px]">실제로 할 일</div><div class="text-slate-800 mt-0.5 leading-relaxed">${active.action}</div></div>
+              <div class="p-2.5 rounded-lg bg-amber-50 border border-amber-200">
+                <div class="font-bold text-amber-800 text-[11px]">확인할 조건</div>
+                <div class="text-amber-900 mt-0.5 leading-relaxed">${active.caution}</div>
+              </div>
+            </div>
+            ${state.pinnedAnnot ? `<div class="pt-2 border-t border-slate-100 text-right"><button type="button" class="unpin-annot-btn text-xs font-semibold text-slate-500 hover:text-slate-800">설명 고정 해제</button></div>` : ""}
+          </div>
+        `;
+      }
+
+      body.innerHTML = html;
+      mobileBody.innerHTML = html;
+      renderMath(body);
+      renderMath(mobileBody);
+
+      document.querySelectorAll(".unpin-annot-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.pinnedAnnot = null;
+          state.hoverAnnot = null;
+          state.activeLinkId = null;
+          renderAnnotationPanel();
+          applyLinkHighlights();
+        });
+      });
+
+      document.querySelectorAll(".jump-linked-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const linkId = btn.dataset.link;
+          state.activeLinkId = linkId;
+          applyLinkHighlights();
+          const target = document.querySelector(`.solution-block[data-link-id="${linkId}"]`);
+          if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      });
+    }
+
+    function applyLinkHighlights() {
+      document.querySelectorAll(".linked-block").forEach(el => {
+        if (state.activeLinkId && el.dataset.linkId === state.activeLinkId) {
+          el.classList.add("highlighted");
+        } else {
+          el.classList.remove("highlighted");
+        }
+      });
+    }
+
+    function renderPracticeCard(p) {
+      const rec = getRecord(p.id);
+      const isSolo = state.mode === "solo";
+      const memoVal = isSolo ? (rec.soloMemo || "") : (rec.memo || "");
+      return `
+        <div class="rounded-xl bg-white border border-slate-200 p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-800">${isSolo ? "이번 시도의 풀이 메모" : "내 연습 기록"}</h3>
+              <p class="text-[11px] text-slate-500">${isSolo ? "혼자 풀기 메모는 따로 기록됩니다." : "생각을 내 문장으로 남기고 재풀이 상태를 기록하세요."}</p>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span id="timerDisplay" class="font-mono text-sm font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg">${formatTime(rec.timerSec || 0)}</span>
+              <button id="timerToggleBtn" type="button" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100">${state.timerRunning ? "일시정지" : "시간 재기"}</button>
+              <button id="timerResetBtn" type="button" class="text-xs px-2 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">초기화</button>
+            </div>
+          </div>
+          <textarea id="memoTextarea" rows="4" placeholder="핵심 아이디어, 막힌 지점, 다음 재풀이 때 기억할 조건을 적어 두세요." class="w-full text-xs p-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30">${memoVal.replace(/</g, "&lt;")}</textarea>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <label for="statusSelect" class="text-xs font-semibold text-slate-600">재풀이 결과:</label>
+              <select id="statusSelect" class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-700">
+                ${Object.entries(STATUS_META).map(([k, v]) => `<option value="${k}" ${rec.status === k ? "selected" : ""}>${v.label}</option>`).join("")}
+              </select>
+            </div>
+            <span class="text-[11px] text-slate-400">자동 저장됨</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function bindPracticeCardEvents(p) {
+      const rec = getRecord(p.id);
+      const toggleBtn = document.getElementById("timerToggleBtn");
+      const resetBtn = document.getElementById("timerResetBtn");
+      const display = document.getElementById("timerDisplay");
+      const memoEl = document.getElementById("memoTextarea");
+      const statusEl = document.getElementById("statusSelect");
+
+      if (toggleBtn) {
+        toggleBtn.addEventListener("click", () => {
+          if (state.timerRunning) {
+            stopTimer();
+            toggleBtn.textContent = "시간 재기";
+          } else {
+            stopTimer();
+            state.timerRunning = true;
+            toggleBtn.textContent = "일시정지";
+            state.timerInterval = setInterval(() => {
+              rec.timerSec = (rec.timerSec || 0) + 1;
+              if (display) display.textContent = formatTime(rec.timerSec);
+              saveRecords();
+            }, 1000);
+          }
+        });
+      }
+      if (resetBtn) {
+        resetBtn.addEventListener("click", () => {
+          stopTimer();
+          rec.timerSec = 0;
+          saveRecords();
+          if (display) display.textContent = "00:00";
+          if (toggleBtn) toggleBtn.textContent = "시간 재기";
+        });
+      }
+      if (memoEl) {
+        memoEl.addEventListener("input", () => {
+          if (state.mode === "solo") rec.soloMemo = memoEl.value;
+          else rec.memo = memoEl.value;
+          saveRecords();
+        });
+      }
+      if (statusEl) {
+        statusEl.addEventListener("change", () => {
+          rec.status = statusEl.value;
+          saveRecords();
+          renderSidebarList();
+          showToast(`학습 상태를 '${STATUS_META[rec.status].label}'(으)로 저장했습니다.`);
+        });
+      }
+    }
+
+    function renderMain() {
+      const p = PROBLEMS.find(x => x.id === state.selectedId) || PROBLEMS[0];
+      const main = document.getElementById("mainContent");
+      const rec = getRecord(p.id);
+
+      const tabs = [
+        { id: "원문", label: "문제 원문", lockedInSolo: false },
+        { id: "개념", label: "개념과 공식", lockedInSolo: true },
+        { id: "설계", label: "풀이 설계", lockedInSolo: true },
+        { id: "연습지", label: "연습지와 답안", lockedInSolo: true },
+        { id: "점검", label: "점검과 재풀이", lockedInSolo: false }
+      ];
+
+      let bodyHtml = "";
+
+      if (p.isPrivate) {
+        bodyHtml = `
+          <div class="rounded-xl bg-rose-50/70 border border-rose-200 p-6 space-y-3">
+            <div class="inline-flex items-center gap-1.5 text-xs font-bold text-rose-700 bg-rose-100 px-2.5 py-1 rounded-full">대학 공식 비공개 문항</div>
+            <h3 class="text-base font-bold text-slate-900">출제 오류로 비공개 및 전원 만점 처리된 문항입니다.</h3>
+            <p class="text-sm text-slate-700 leading-relaxed">동국대학교 2025학년도 자연계열 수리논술 문제 2는 출제 오류로 인해 공식 원문과 해설이 비공개되었으며, 응시자 전원 만점 처리되었습니다. 따라서 임의 복원 문항이나 추측 풀이를 싣지 않습니다.</p>
+            <a href="${p.officialUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:underline">공식 논술가이드북 원문 확인 ↗</a>
+          </div>
+        `;
+      } else if (p.isSummaryOnly) {
+        bodyHtml = `
+          <div class="rounded-xl bg-white border border-slate-200 p-5 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="text-sm font-bold text-slate-800">공식 기출 PDF 연동 학습</h3>
+              <a href="${p.officialUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition">공식 원문 PDF 바로 열기 ↗</a>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">${p.summary}</p>
+            <div>
+              <div class="text-xs font-bold text-slate-700 mb-2">수록 소문항 (${p.subquestionList.length}개)</div>
+              <div class="flex flex-wrap gap-1.5">
+                ${p.subquestionList.map(sq => `<span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">${sq}</span>`).join("")}
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-blue-50/70 border border-blue-200 text-xs text-blue-900 leading-relaxed">
+              이 문항은 공식 PDF를 보며 타이머·메모·재풀이 기록을 남길 수 있도록 연결되어 있습니다. 제미나이나 ChatGPT에서 <code class="px-1 py-0.5 bg-white rounded">PROBLEMS</code> 배열의 <code class="px-1 py-0.5 bg-white rounded">${p.id}</code> 항목에 상세 제시문·연습지·주석을 채워 넣으면 동국대 문항과 동일한 5개 탭 해설이 즉시 활성화됩니다.
+            </div>
+          </div>
+          ${renderPracticeCard(p)}
+        `;
+      } else {
+        const isLocked = state.mode === "solo" && tabs.find(t => t.id === state.activeTab)?.lockedInSolo;
+        if (isLocked) {
+          const shownCount = state.hintsShown[p.id] || 0;
+          const totalHints = (p.hints || []).length;
+          bodyHtml = `
+            <div class="spoiler-box rounded-xl p-6 text-center space-y-4">
+              <div class="text-sm font-bold text-slate-800">혼자 풀기 모드에서는 해설이 잠겨 있습니다</div>
+              <p class="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">혼자 풀기를 마친 뒤 열면, 직접 떠올린 방법과 해설을 비교할 수 있습니다. 막히면 아래 힌트를 한 단계씩만 열어 보세요.</p>
+              <div class="flex flex-wrap justify-center gap-2">
+                <button id="soloNextHintBtn" type="button" class="px-3.5 py-2 rounded-lg border border-blue-300 bg-white hover:bg-blue-50 text-blue-700 text-xs font-semibold">
+                  ${shownCount < totalHints ? `힌트 보기 (${shownCount} / ${totalHints}단계)` : `힌트 모두 열림 (${totalHints} / ${totalHints})`}
+                </button>
+                <button id="unlockStudyModeBtn" type="button" class="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold">해설을 열고 확인하기</button>
+              </div>
+              ${shownCount > 0 ? `
+                <div class="text-left max-w-xl mx-auto space-y-2 pt-2">
+                  ${p.hints.slice(0, shownCount).map((h, i) => `
+                    <div class="p-3 rounded-lg bg-white border border-blue-200 text-xs text-slate-700"><span class="font-bold text-blue-600 mr-1.5">힌트 ${i + 1}.</span>${h}</div>
+                  `).join("")}
+                </div>
+              ` : ""}
+            </div>
+            ${renderPracticeCard(p)}
+          `;
+        } else if (state.activeTab === "원문") {
+          bodyHtml = `
+            <div class="rounded-xl bg-white border border-slate-200 p-5 space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-500">조건을 천천히 읽어 보세요</span>
+                <span class="text-[11px] text-slate-400">${p.officialPage}</span>
+              </div>
+              <div class="space-y-2.5">
+                ${(p.passages || []).map((ps, idx) => `
+                  <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200/80 text-sm leading-relaxed text-slate-800">
+                    <span class="font-bold text-slate-900 mr-1">${ps.label}</span>${ps.text}
+                    ${ps.annot && state.mode === "study" ? `<button type="button" class="annot-trigger" data-annot-group="passage" data-annot-idx="${idx}">설명</button>` : ""}
+                  </div>
+                `).join("")}
+              </div>
+              <div class="pt-2 border-t border-slate-100 text-sm leading-relaxed text-slate-900 font-medium">${p.prompt}</div>
+              <div class="space-y-2.5">
+                ${(p.subquestions || []).map((sq, idx) => `
+                  <div class="p-3.5 rounded-lg bg-white border border-slate-200 text-sm leading-relaxed text-slate-800">
+                    <span class="font-bold text-blue-700 mr-1.5">${sq.num}</span>${sq.text}
+                    ${sq.annot && state.mode === "study" ? `<button type="button" class="annot-trigger" data-annot-group="subq" data-annot-idx="${idx}">설명</button>` : ""}
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+            ${state.mode === "solo" ? renderPracticeCard(p) : ""}
+          `;
+        } else if (state.activeTab === "개념") {
+          bodyHtml = `
+            <div class="space-y-4">
+              <div class="text-xs font-semibold text-slate-500">풀이에 필요한 만큼부터 — 선수 개념과 공식 분류</div>
+              <div class="grid gap-3">
+                ${(p.concepts || []).map((c, idx) => `
+                  <div class="rounded-xl bg-white border border-slate-200 p-4 space-y-2.5">
+                    <div class="flex items-center gap-2">
+                      <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700">${c.subject}</span>
+                      <h3 class="text-sm font-bold text-slate-900">${c.title}</h3>
+                    </div>
+                    <p class="text-xs text-slate-700 leading-relaxed">${c.desc}</p>
+                    <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200/80 text-xs text-slate-700"><span class="font-bold text-slate-500 mr-1.5">짧은 예시</span>${c.example}</div>
+                    <div class="pt-1">
+                      <div class="text-xs font-medium text-slate-800">확인 질문: ${c.quizQ}</div>
+                      <button type="button" class="toggle-quiz-btn mt-1 text-xs font-semibold text-blue-600 hover:underline" data-quiz-idx="${idx}">▶ 확인 답 보기</button>
+                      <div id="quizAns-${idx}" class="hidden mt-1.5 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-900">${c.quizA}</div>
+                    </div>
+                  </div>
+                `).join("")}
+              </div>
+              <div class="rounded-xl bg-white border border-slate-200 p-4 space-y-2.5">
+                <h3 class="text-sm font-bold text-slate-900">사용된 공식 분류 (외울 것 vs 유도·제공식)</h3>
+                <div class="divide-y divide-slate-100">
+                  ${(p.formulas || []).map(f => `
+                    <div class="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div class="space-y-0.5">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">${f.type}</span>
+                        <span class="text-xs font-bold text-slate-800 ml-1.5">${f.name}</span>
+                        <div class="text-[11px] text-slate-500">${f.note}</div>
+                      </div>
+                      <div class="text-sm text-slate-900 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 shrink-0">${f.expr}</div>
+                    </div>
+                  `).join("")}
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (state.activeTab === "설계") {
+          const revealed = !!state.designRevealed[p.id];
+          const shownHints = state.hintsShown[p.id] || 0;
+          const totalHints = (p.hints || []).length;
+          bodyHtml = `
+            <div class="space-y-4">
+              ${!revealed ? `
+                <div class="spoiler-box rounded-xl p-6 text-center space-y-3">
+                  <div class="text-sm font-bold text-slate-800">풀이를 시작하기 전에 큰 흐름을 잡아요</div>
+                  <p class="text-xs text-slate-600">먼저 아래 힌트를 보거나, 준비가 되면 전체 풀이 설계를 펼쳐 확인하세요.</p>
+                  <button id="revealDesignBtn" type="button" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold">전체 풀이 설계 펼치기</button>
+                </div>
+              ` : `
+                <div class="rounded-xl bg-white border border-slate-200 p-5 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-slate-900">목표에서 출발하는 풀이 설계</h3>
+                    <button id="hideDesignBtn" type="button" class="text-xs text-slate-500 hover:text-slate-800">다시 접기</button>
+                  </div>
+                  <ol class="space-y-3">
+                    ${(p.designSteps || []).map((st, idx) => `
+                      <li class="flex gap-3">
+                        <span class="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">${idx + 1}</span>
+                        <div class="space-y-0.5">
+                          <div class="text-xs font-bold text-slate-900">${st.title}</div>
+                          <p class="text-xs text-slate-700 leading-relaxed">${st.detail}</p>
+                        </div>
+                      </li>
+                    `).join("")}
+                  </ol>
+                </div>
+              `}
+
+              <div class="rounded-xl bg-white border border-slate-200 p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-sm font-bold text-slate-800">단계별 힌트</h3>
+                  <button id="nextHintBtn" type="button" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100">
+                    ${shownHints < totalHints ? `다음 힌트 보기 (${shownHints} / ${totalHints}단계)` : `모든 힌트 열림 (${totalHints} / ${totalHints})`}
+                  </button>
+                </div>
+                ${shownHints > 0 ? `
+                  <div class="space-y-2">
+                    ${p.hints.slice(0, shownHints).map((h, i) => `
+                      <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700"><span class="font-bold text-blue-600 mr-1.5">힌트 ${i + 1}.</span>${h}</div>
+                    `).join("")}
+                  </div>
+                ` : `<p class="text-xs text-slate-400">막힐 때만 힌트를 한 단계씩 열어 보세요.</p>`}
+              </div>
+
+              ${renderPracticeCard(p)}
+            </div>
+          `;
+        } else if (state.activeTab === "연습지") {
+          bodyHtml = `
+            <div class="space-y-5">
+              <div class="text-xs text-slate-500">현장 연습지 블록을 클릭하면 우측 해설창에 사고 흐름이 고정되고, 연결된 제출용 답안이 함께 강조됩니다.</div>
+
+              <div class="rounded-xl bg-white border border-slate-200 p-5 space-y-3">
+                <h3 class="text-sm font-bold text-slate-900">현장 연습지 (확정된 사실 · 시도 · 중단한 접근)</h3>
+                <div class="space-y-2.5">
+                  ${(p.scratchpad || []).map((sc, idx) => `
+                    <div class="linked-block scratch-block p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 cursor-pointer hover:border-blue-300" data-link-id="${sc.linkId}" data-scratch-idx="${idx}">
+                      <div class="flex items-center justify-between gap-2 mb-1.5">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${getScratchKindClass(sc.kind)}">${sc.kind}</span>
+                        <span class="text-[11px] font-semibold text-blue-600">설명 · 답안 연결</span>
+                      </div>
+                      <div class="text-xs text-slate-800 leading-relaxed">${sc.text}</div>
+                    </div>
+                  `).join("")}
+                </div>
+              </div>
+
+              <div class="rounded-xl bg-white border border-slate-200 p-5 space-y-3">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-sm font-bold text-slate-900">제출용 답안</h3>
+                  <span class="text-[11px] text-slate-400">대학 공식 해설 바탕 학습용 재구성</span>
+                </div>
+                <div class="space-y-2.5">
+                  ${(p.solution || []).map((sol, idx) => `
+                    <div class="linked-block solution-block p-3.5 rounded-xl border border-slate-200 bg-white cursor-pointer hover:border-blue-300" data-link-id="${sol.linkId}" data-sol-idx="${idx}">
+                      <div class="text-xs leading-relaxed text-slate-800">
+                        <span class="font-bold text-blue-700 mr-1.5">${sol.step}</span>${sol.text}
+                        ${sol.annot ? `<button type="button" class="annot-trigger" data-annot-group="sol" data-annot-idx="${idx}">설명</button>` : ""}
+                      </div>
+                    </div>
+                  `).join("")}
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (state.activeTab === "점검") {
+          const checks = p.checklist || [];
+          const doneCount = checks.filter((_, i) => rec.checklist && rec.checklist[i]).length;
+          bodyHtml = `
+            <div class="space-y-4">
+              <div class="rounded-xl bg-white border border-slate-200 p-5 space-y-3">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-sm font-bold text-slate-900">이 문항에서 놓치기 쉬운 부분</h3>
+                  <span class="text-xs font-semibold text-blue-700">확인 ${doneCount} / ${checks.length}개</span>
+                </div>
+                <div class="space-y-2">
+                  ${checks.map((ck, i) => `
+                    <label class="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer text-xs text-slate-800 leading-relaxed">
+                      <input type="checkbox" class="check-item mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" data-check-idx="${i}" ${rec.checklist && rec.checklist[i] ? "checked" : ""} />
+                      <span>${ck}</span>
+                    </label>
+                  `).join("")}
+                </div>
+                <div class="pt-2 flex flex-wrap gap-2">
+                  <button id="retrySoloBtn" type="button" class="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold">빈 공간에서 다시 풀기</button>
+                  <button id="reviewSolutionBtn" type="button" class="px-3.5 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold">제출 답안 돌아보기</button>
+                </div>
+              </div>
+              ${renderPracticeCard(p)}
+            </div>
+          `;
+        }
+      }
+
+      main.innerHTML = `
+        <!-- 문항 헤더 카드 -->
+        <div class="rounded-2xl bg-white border border-slate-200 p-5 space-y-3 shadow-2xs">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="text-xs font-semibold text-slate-500">${p.school} / ${p.year}학년도 / ${p.session} · ${p.number}</div>
+            <a href="${p.officialUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 px-2.5 py-1 rounded-lg">공식 원문 ↗</a>
+          </div>
+          <h1 class="text-lg sm:text-xl font-bold text-slate-900 leading-snug">${p.title}</h1>
+          <div class="flex flex-wrap items-center gap-1.5">
+            ${(p.subjects || []).map(s => `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">${s}</span>`).join("")}
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md border ${getAccessBadgeClass(p.accessLevel)}">${p.accessLabel}</span>
+            ${!p.isPrivate ? `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-md ${STATUS_META[rec.status].badge}">${STATUS_META[rec.status].label}</span>` : ""}
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">${p.summary}</p>
+        </div>
+
+        <!-- 5개 학습 탭 바 -->
+        ${!p.isPrivate && !p.isSummaryOnly ? `
+          <div class="flex items-center justify-between border-b border-slate-200 overflow-x-auto no-print">
+            <div class="flex items-center gap-1">
+              ${tabs.map(t => `
+                <button type="button" data-tab="${t.id}" class="tab-btn px-3.5 py-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 ${state.activeTab === t.id ? "active" : ""}">
+                  ${state.mode === "solo" && t.lockedInSolo ? "🔒 " : ""}${t.label}
+                </button>
+              `).join("")}
+            </div>
+            <button id="printBtn" type="button" class="shrink-0 ml-2 text-xs text-slate-500 hover:text-slate-800 px-2.5 py-1.5 rounded-lg hover:bg-slate-100">인쇄</button>
+          </div>
+        ` : ""}
+
+        <!-- 탭 본문 -->
+        <div id="tabBody">${bodyHtml}</div>
+      `;
+
+      renderMath(main);
+      bindMainEvents(p);
+      applyLinkHighlights();
+    }
+
+    function bindMainEvents(p) {
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.activeTab = btn.dataset.tab;
+          state.pinnedAnnot = null;
+          state.hoverAnnot = null;
+          state.activeLinkId = null;
+          renderMain();
+          renderAnnotationPanel();
+        });
+      });
+
+      const printBtn = document.getElementById("printBtn");
+      if (printBtn) printBtn.addEventListener("click", () => window.print());
+
+      // 주석 트리거(원문/답안)
+      document.querySelectorAll(".annot-trigger").forEach(btn => {
+        const group = btn.dataset.annotGroup;
+        const idx = Number(btn.dataset.annotIdx);
+        let annotData = null;
+        if (group === "passage") annotData = p.passages[idx]?.annot;
+        else if (group === "subq") annotData = p.subquestions[idx]?.annot;
+        else if (group === "sol") annotData = p.solution[idx]?.annot;
+        if (!annotData) return;
+
+        btn.addEventListener("mouseenter", () => {
+          if (!state.pinnedAnnot) {
+            state.hoverAnnot = annotData;
+            renderAnnotationPanel();
+          }
+        });
+        btn.addEventListener("mouseleave", () => {
+          if (!state.pinnedAnnot) {
+            state.hoverAnnot = null;
+            renderAnnotationPanel();
+          }
+        });
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          state.pinnedAnnot = annotData;
+          renderAnnotationPanel();
+          if (window.innerWidth < 1280) {
+            document.getElementById("mobileAnnotModal").classList.remove("hidden");
+          }
+        });
+      });
+
+      // 연습지-답안 연결 블록
+      document.querySelectorAll(".scratch-block").forEach(el => {
+        const idx = Number(el.dataset.scratchIdx);
+        const sc = p.scratchpad[idx];
+        el.addEventListener("mouseenter", () => {
+          if (!state.pinnedAnnot) {
+            state.hoverAnnot = { type: "scratch", ...sc };
+            renderAnnotationPanel();
+          }
+        });
+        el.addEventListener("mouseleave", () => {
+          if (!state.pinnedAnnot) {
+            state.hoverAnnot = null;
+            renderAnnotationPanel();
+          }
+        });
+        el.addEventListener("click", () => {
+          state.pinnedAnnot = { type: "scratch", ...sc };
+          state.activeLinkId = sc.linkId;
+          renderAnnotationPanel();
+          applyLinkHighlights();
+          if (window.innerWidth < 1280) {
+            document.getElementById("mobileAnnotModal").classList.remove("hidden");
+          }
+        });
+      });
+
+      document.querySelectorAll(".solution-block").forEach(el => {
+        el.addEventListener("click", () => {
+          state.activeLinkId = el.dataset.linkId;
+          applyLinkHighlights();
+        });
+      });
+
+      // 개념 확인 답 토글
+      document.querySelectorAll(".toggle-quiz-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const box = document.getElementById(`quizAns-${btn.dataset.quizIdx}`);
+          if (box) {
+            const hidden = box.classList.toggle("hidden");
+            btn.textContent = hidden ? "▶ 확인 답 보기" : "▼ 확인 답 접기";
+          }
+        });
+      });
+
+      // 풀이 설계 펼치기/접기 & 힌트
+      const revBtn = document.getElementById("revealDesignBtn");
+      if (revBtn) revBtn.addEventListener("click", () => { state.designRevealed[p.id] = true; renderMain(); });
+      const hideBtn = document.getElementById("hideDesignBtn");
+      if (hideBtn) hideBtn.addEventListener("click", () => { state.designRevealed[p.id] = false; renderMain(); });
+
+      const nextHint = document.getElementById("nextHintBtn") || document.getElementById("soloNextHintBtn");
+      if (nextHint) {
+        nextHint.addEventListener("click", () => {
+          const cur = state.hintsShown[p.id] || 0;
+          if (cur < (p.hints || []).length) {
+            state.hintsShown[p.id] = cur + 1;
+            renderMain();
+          }
+        });
+      }
+
+      const unlockBtn = document.getElementById("unlockStudyModeBtn");
+      if (unlockBtn) unlockBtn.addEventListener("click", () => setMode("study"));
+
+      // 체크리스트
+      document.querySelectorAll(".check-item").forEach(cb => {
+        cb.addEventListener("change", () => {
+          const rec = getRecord(p.id);
+          if (!rec.checklist) rec.checklist = {};
+          rec.checklist[cb.dataset.checkIdx] = cb.checked;
+          saveRecords();
+          renderMain();
+        });
+      });
+
+      const retryBtn = document.getElementById("retrySoloBtn");
+      if (retryBtn) retryBtn.addEventListener("click", () => setMode("solo"));
+      const reviewBtn = document.getElementById("reviewSolutionBtn");
+      if (reviewBtn) {
+        reviewBtn.addEventListener("click", () => {
+          state.mode = "study";
+          state.activeTab = "연습지";
+          updateModeButtons();
+          renderMain();
+          renderAnnotationPanel();
+        });
+      }
+
+      bindPracticeCardEvents(p);
+    }
+
+    // 전역 이벤트 초기화
+    function init() {
+      loadRecords();
+      const hashId = window.location.hash.replace("#", "");
+      if (hashId && PROBLEMS.some(p => p.id === hashId)) {
+        state.selectedId = hashId;
+      }
+
+      initFilters();
+      renderExamSchedule();
+      updateModeButtons();
+      renderSidebarList();
+      renderMain();
+      renderAnnotationPanel();
+
+      document.getElementById("modeStudyBtn").addEventListener("click", () => setMode("study"));
+      document.getElementById("modeSoloBtn").addEventListener("click", () => setMode("solo"));
+      document.getElementById("searchInput").addEventListener("input", (e) => { state.searchQuery = e.target.value; renderSidebarList(); });
+      document.getElementById("yearFilter").addEventListener("change", (e) => { state.yearFilter = e.target.value; renderSidebarList(); });
+      document.getElementById("sessionFilter").addEventListener("change", (e) => { state.sessionFilter = e.target.value; renderSidebarList(); });
+      document.getElementById("accessFilter").addEventListener("change", (e) => { state.accessFilter = e.target.value; renderSidebarList(); });
+
+      // 모바일 드로어 & 주석 시트
+      document.getElementById("mobileMenuBtn").addEventListener("click", () => document.getElementById("mobileDrawer").classList.remove("hidden"));
+      document.getElementById("closeMobileDrawer").addEventListener("click", () => document.getElementById("mobileDrawer").classList.add("hidden"));
+      document.getElementById("mobileDrawerBackdrop").addEventListener("click", () => document.getElementById("mobileDrawer").classList.add("hidden"));
+      document.getElementById("mobileAnnotBtn").addEventListener("click", () => document.getElementById("mobileAnnotModal").classList.remove("hidden"));
+      document.getElementById("closeMobileAnnot").addEventListener("click", () => document.getElementById("mobileAnnotModal").classList.add("hidden"));
+      document.getElementById("mobileAnnotBackdrop").addEventListener("click", () => document.getElementById("mobileAnnotModal").classList.add("hidden"));
+
+      // 기록 내보내기 / 가져오기
+      document.getElementById("exportBtn").addEventListener("click", () => {
+        const blob = new Blob([JSON.stringify(state.records, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `nonsul-lab-records-${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast("학습 기록 JSON 파일을 내보냈습니다.");
+      });
+
+      document.getElementById("importInput").addEventListener("change", (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const parsed = JSON.parse(reader.result);
+            if (parsed && typeof parsed === "object") {
+              state.records = { ...state.records, ...parsed };
+              saveRecords();
+              renderSidebarList();
+              renderMain();
+              showToast("학습 기록을 성공적으로 불러왔습니다.");
+            }
+          } catch (err) {
+            showToast("올바른 JSON 기록 파일이 아닙니다.");
+          }
+        };
+        reader.readAsText(file);
+        e.target.value = "";
+      });
+
+      window.addEventListener("hashchange", () => {
+        const id = window.location.hash.replace("#", "");
+        if (id && id !== state.selectedId && PROBLEMS.some(p => p.id === id)) {
+          selectProblem(id);
+        }
+      });
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      init();
+      // KaTeX 로드 완료 시 재렌더, 오프라인/차단 시 경량 수식 폴백 적용
+      window.addEventListener("load", () => {
+        if (window.renderMathInElement) {
+          window.__onKatexLoad();
+        } else {
+          katexFallbackArmed = true;
+          applyFallbackMath(document.getElementById("mainContent"));
+          applyFallbackMath(document.getElementById("annotPanelBody"));
+          applyFallbackMath(document.getElementById("mobileAnnotBody"));
+        }
+      });
+    });
+  </script>
+</body>
+</html>
